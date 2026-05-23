@@ -1,6 +1,3 @@
--- ─── EXTENSIONS ──────────────────────────────────────────────────────────────
-create extension if not exists "uuid-ossp";
-
 -- ─── ENUMS ───────────────────────────────────────────────────────────────────
 create type user_role as enum ('admin', 'client', 'writer');
 
@@ -37,7 +34,7 @@ create table public.profiles (
 
 -- ─── WRITERS ──────────────────────────────────────────────────────────────────
 create table public.writers (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   profile_id  uuid references public.profiles(id) on delete set null,
   name        text not null,
   email       text not null unique,
@@ -48,7 +45,7 @@ create table public.writers (
 
 -- ─── ORDERS ───────────────────────────────────────────────────────────────────
 create table public.orders (
-  id             uuid primary key default uuid_generate_v4(),
+  id             uuid primary key default gen_random_uuid(),
   ref            text not null unique,        -- e.g. MS-84729
   client_id      uuid references public.profiles(id) on delete set null,
   writer_id      uuid references public.writers(id) on delete set null,
@@ -88,7 +85,7 @@ create table public.orders (
 
 -- ─── ORDER FILES ──────────────────────────────────────────────────────────────
 create table public.order_files (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   order_id    uuid not null references public.orders(id) on delete cascade,
   uploaded_by uuid references public.profiles(id) on delete set null,
   file_name   text not null,
@@ -101,7 +98,7 @@ create table public.order_files (
 
 -- ─── ORDER MESSAGES ───────────────────────────────────────────────────────────
 create table public.order_messages (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   order_id    uuid not null references public.orders(id) on delete cascade,
   sender_id   uuid references public.profiles(id) on delete set null,
   sender_name text,                    -- fallback if profile deleted
@@ -112,7 +109,7 @@ create table public.order_messages (
 
 -- ─── ORDER LOG ────────────────────────────────────────────────────────────────
 create table public.order_log (
-  id          uuid primary key default uuid_generate_v4(),
+  id          uuid primary key default gen_random_uuid(),
   order_id    uuid not null references public.orders(id) on delete cascade,
   actor_id    uuid references public.profiles(id) on delete set null,
   actor_name  text,
@@ -122,7 +119,7 @@ create table public.order_log (
 
 -- ─── PAYMENTS ─────────────────────────────────────────────────────────────────
 create table public.payments (
-  id           uuid primary key default uuid_generate_v4(),
+  id           uuid primary key default gen_random_uuid(),
   order_id     uuid not null references public.orders(id) on delete cascade,
   amount       numeric(10,2) not null,
   type         text not null,          -- 'deposit' | 'balance'
