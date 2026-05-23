@@ -208,7 +208,7 @@ function OrderModal({ level, program, scope, onClose }) {
     setOid(id);
     setTimeout(() => {
       setLoading(false); setDone(true);
-      window.open(`https://wa.me/254700000000?text=${encodeURIComponent(msg+"\n\n*Ref: "+id+"*")}`, "_blank");
+      window.open(`https://wa.me/12057279363?text=${encodeURIComponent(msg+"\n\n*Ref: "+id+"*")}`, "_blank");
     }, 900);
   }
 
