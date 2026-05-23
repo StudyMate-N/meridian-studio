@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, Fragment } from "react";
+import { supabase } from "./lib/supabase.js";
 
 const LEVELS = [
   { id:"undergrad",   label:"Undergraduate",   abbr:"UG",  sub:"Associate · Bachelor's",     rW:12, rP:null, hue:"#2563EB", hueSoft:"#EFF6FF", rateContext:"Foundational essays, case studies, and discussion posts. Standard citations, clear rubric alignment." },
@@ -186,33 +187,102 @@ function OrderModal({ level, program, scope, onClose, onPlaced }) {
     return () => document.removeEventListener("keydown", fn);
   }, []);
 
-  function submit() {
+  async function submit() {
     const e = {};
     if(!name.trim())  e.name=true;
     if(!phone.trim()) e.phone=true;
     if(!due)          e.due=true;
     setErrs(e);
     if(Object.keys(e).length) return;
-    const msg = ["📋 *New Order — Meridian Studio*","",
+    setLoading(true);
+
+    let ref = "MS-"+Date.now().toString().slice(-5);
+
+    try {
+      // 1. Generate a server-side unique ref
+      const { data: refData } = await supabase.rpc("generate_order_ref");
+      if (refData) ref = refData;
+
+      // 2. Insert order into Supabase
+      const { data: order, error: orderErr } = await supabase
+        .from("orders")
+        .insert({
+          ref,
+          level:          level?.id,
+          level_label:    level?.label,
+          program,
+          scope_id:       scope?.id,
+          scope_label:    scope?.label,
+          has_project:    scope?.hasProject || false,
+          is_bundle:      scope?.bundle || false,
+          rate_writing:   level?.rW,
+          rate_project:   level?.rP || null,
+          due_date:       due || null,
+          access_method:  access,
+          payment_method: pay,
+          notes:          notes || null,
+          client_name:    name,
+          client_phone:   phone,
+          client_email:   email || null,
+          status:         "new",
+          payment_status: "unpaid",
+        })
+        .select()
+        .single();
+
+      if (orderErr) throw orderErr;
+
+      // 3. Upload brief to Supabase Storage if provided
+      if (brief && order) {
+        const path = `${order.id}/${Date.now()}-${brief.name}`;
+        const { error: upErr } = await supabase.storage
+          .from("order-files")
+          .upload(path, brief);
+        if (!upErr) {
+          await supabase.from("order_files").insert({
+            order_id:   order.id,
+            file_name:  brief.name,
+            file_path:  path,
+            kind:       "brief",
+            size_bytes: brief.size,
+          });
+        }
+      }
+
+      // 4. Log creation event
+      if (order) {
+        await supabase.from("order_log").insert({
+          order_id:   order.id,
+          actor_name: name,
+          event:      "Order created",
+        });
+      }
+    } catch (err) {
+      console.warn("Supabase write failed, falling back to WhatsApp-only:", err);
+    }
+
+    // 5. Build and open WhatsApp message (always runs — Supabase is never a blocker)
+    const msg = [
+      "📋 *New Order — Meridian Studio*","",
       `*Name:* ${name}`,`*WhatsApp:* ${phone}`,
       email?`*Email:* ${email}`:null,"",
       `*Level:* ${level?.label}`,`*Program:* ${program}`,
       `*Scope:* ${scope?.label}`,`*Due:* ${due}`,
       `*Access:* ${access==="portal"?"Upload via portal":"Dedicated device + TeamViewer"}`,
       `*Payment:* ${pay}`,
-      brief?`*Brief:* ${brief.name} — please also send the file in WhatsApp`:null,
+      brief?`*Brief:* ${brief.name} (uploading separately via portal)`:null,
       notes?`*Notes:* ${notes}`:null,"",
       scope?.orderNote,
+      "",`*Ref:* ${ref}`,
     ].filter(Boolean).join("\n");
-    const id = "MS-"+Date.now().toString().slice(-5);
-    const url = `https://wa.me/12057279363?text=${encodeURIComponent(msg+"\n\n*Ref: "+id+"*")}`;
-    // Open immediately on the user gesture — delayed window.open is blocked by popup blockers
-    const win = window.open(url, "_blank");
-    setOid(id);
-    setLoading(true);
+    const waNum = import.meta.env.VITE_WHATSAPP_NUMBER || "12057279363";
+    const url   = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
+    const win   = window.open(url, "_blank");
+    setOid(ref);
     if (!win || win.closed || typeof win.closed === "undefined") setBlockedUrl(url);
-    setTimeout(() => { setLoading(false); setDone(true); }, 900);
-    if (onPlaced) onPlaced({ ref:id, scopeLabel:scope?.label||"Order", level:level?.label, program, due });
+    setLoading(false);
+    setDone(true);
+    if (onPlaced) onPlaced({ ref, scopeLabel:scope?.label||"Order", level:level?.label, program, due });
   }
 
   return (
@@ -735,14 +805,48 @@ function CatalogPage({ onGoDesk }) {
 }
 
 // WORKSPACE PAGE
-function WorkspacePage({ onGoCatalog, onAdmin, defaultNav="new" }) {
+function WorkspacePage({ onGoCatalog, onAdmin, defaultNav="new", user=null }) {
   const [lvId,  setLvId]  = useState("dnp");
   const [prog,  setProg]  = useState(PROGRAMS.dnp[0]);
   const [scope, setScope] = useState(null);
   const [showR, setShowR] = useState(false);
   const [modal, setModal] = useState(false);
   const [nav,   setNav]   = useState(defaultNav);
-  const [sessionOrders, setSessionOrders] = useState([]);
+  const [sessionOrders,  setSessionOrders]  = useState([]);
+  const [dbOrders,       setDbOrders]       = useState([]);
+  const [dbLoading,      setDbLoading]      = useState(false);
+  const [signInEmail,    setSignInEmail]    = useState("");
+  const [signInSent,     setSignInSent]     = useState(false);
+  const [signInLoading,  setSignInLoading]  = useState(false);
+  const [signInErr,      setSignInErr]      = useState("");
+
+  // Load orders from Supabase when user logs in
+  useEffect(() => {
+    if (!user) { setDbOrders([]); return; }
+    setDbLoading(true);
+    supabase
+      .from("orders")
+      .select("*")
+      .eq("client_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { setDbOrders(data || []); setDbLoading(false); });
+  }, [user]);
+
+  async function handleSignIn() {
+    if (!signInEmail.trim()) return;
+    setSignInLoading(true);
+    setSignInErr("");
+    const { error } = await supabase.auth.signInWithOtp({
+      email: signInEmail.trim(),
+      options: { emailRedirectTo: window.location.origin },
+    });
+    if (error) { setSignInErr(error.message); setSignInLoading(false); }
+    else { setSignInSent(true); setSignInLoading(false); }
+  }
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+  }
 
   const lv   = LEVELS.find(l=>l.id===lvId);
   const prgs = PROGRAMS[lvId]||[];
@@ -793,17 +897,37 @@ function WorkspacePage({ onGoCatalog, onAdmin, defaultNav="new" }) {
           background:"rgba(255,255,255,0.04)", border:`1px solid ${T.sideBorder}` }}>
           <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", marginBottom:4,
             fontWeight:600, letterSpacing:"0.6px", textTransform:"uppercase" }}>Session</div>
-          <div style={{ fontSize:12, color:"#fff", marginBottom:4 }}>Guest session</div>
+          {user ? (<>
+            <div style={{ fontSize:12, color:"#fff", marginBottom:2, wordBreak:"break-all" }}>
+              {user.email}
+            </div>
+            <button onClick={handleSignOut}
+              style={{ fontSize:10, color:"rgba(255,255,255,0.4)", background:"transparent",
+                border:"none", cursor:"pointer", fontFamily:F.sans, fontWeight:500,
+                padding:"4px 0 0", display:"block" }}>
+              Sign out
+            </button>
+          </>) : (<>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", marginBottom:4 }}>
+              Guest session
+            </div>
+            <button onClick={()=>setNav("orders")}
+              style={{ fontSize:10, color:hue, background:"transparent",
+                border:"none", cursor:"pointer", fontFamily:F.sans, fontWeight:600, padding:0 }}>
+              Sign in →
+            </button>
+          </>)}
           <button onClick={onGoCatalog}
-            style={{ fontSize:10, color:hue, background:"transparent",
-              border:"none", cursor:"pointer", fontFamily:F.sans, fontWeight:600, padding:0 }}>
+            style={{ fontSize:10, color:"rgba(255,255,255,0.35)", background:"transparent",
+              border:"none", cursor:"pointer", fontFamily:F.sans, fontWeight:500,
+              padding:"8px 0 0", display:"block" }}>
             ← Back to catalog
           </button>
           {onAdmin && (
             <button onClick={onAdmin}
               style={{ fontSize:10, color:"rgba(255,255,255,0.22)", background:"transparent",
                 border:"none", cursor:"pointer", fontFamily:F.sans, fontWeight:500,
-                padding:"10px 0 0", display:"block" }}>
+                padding:"6px 0 0", display:"block" }}>
               Staff access →
             </button>
           )}
@@ -1086,49 +1210,118 @@ function WorkspacePage({ onGoCatalog, onAdmin, defaultNav="new" }) {
                   color:T.ink, marginBottom:3 }}>My Orders</h1>
                 <p style={{ fontSize:13, color:T.inkLight }}>Orders placed in this session.</p>
               </div>
-              {sessionOrders.length===0 ? (
+              {/* Not signed in → sign-in prompt */}
+              {!user && !signInSent && (
                 <div style={{ background:T.surface, border:`1px solid ${T.border}`,
-                  borderRadius:12, padding:52, textAlign:"center",
+                  borderRadius:12, padding:36, maxWidth:440,
                   boxShadow:"0 1px 3px rgba(17,20,24,0.04)" }}>
-                  <div style={{ fontSize:36, marginBottom:12 }}>📋</div>
                   <div style={{ fontSize:18, fontWeight:600, fontFamily:F.serif,
-                    color:T.ink, marginBottom:6 }}>No orders yet</div>
-                  <div style={{ fontSize:13, color:T.inkLight, marginBottom:22, lineHeight:1.6 }}>
-                    Place your first order from the New Order tab.
+                    color:T.ink, marginBottom:6 }}>Sign in to track your orders</div>
+                  <div style={{ fontSize:13, color:T.inkLight, lineHeight:1.7, marginBottom:20 }}>
+                    Enter your email and we'll send a magic link — no password needed.
                   </div>
-                  <Btn onClick={()=>setNav("new")}>Place an Order →</Btn>
+                  <div style={{ marginBottom:12 }}>
+                    <FL text="Email address" />
+                    <input value={signInEmail} onChange={e=>setSignInEmail(e.target.value)}
+                      onKeyDown={e=>e.key==="Enter"&&handleSignIn()}
+                      type="email" placeholder="you@email.com"
+                      style={{ width:"100%", padding:"10px 13px", boxSizing:"border-box",
+                        border:`1.5px solid ${T.border}`, borderRadius:8, fontSize:14,
+                        fontFamily:F.sans, color:T.ink, background:T.surface, outline:"none" }} />
+                  </div>
+                  {signInErr && (
+                    <div style={{ fontSize:12, color:T.accent, marginBottom:10, fontFamily:F.sans }}>
+                      {signInErr}
+                    </div>
+                  )}
+                  <Btn full onClick={handleSignIn} disabled={signInLoading}>
+                    {signInLoading ? "Sending…" : "Send magic link →"}
+                  </Btn>
                 </div>
-              ) : (
-                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                  {sessionOrders.map(o => (
-                    <div key={o.ref} style={{ background:T.surface, border:`1px solid ${T.border}`,
-                      borderRadius:10, padding:"16px 20px",
-                      boxShadow:"0 1px 3px rgba(17,20,24,0.04)" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-                        <div>
-                          <div style={{ fontSize:10, fontFamily:F.mono, color:T.accent,
-                            fontWeight:700, letterSpacing:"1px", marginBottom:4 }}>{o.ref}</div>
-                          <div style={{ fontSize:14, fontWeight:600, color:T.ink }}>{o.scopeLabel}</div>
-                          <div style={{ fontSize:12, color:T.inkLight, marginTop:2 }}>
-                            {o.level} · {o.program}
+              )}
+
+              {/* Magic link sent */}
+              {!user && signInSent && (
+                <div style={{ background:T.greenBg, border:`1px solid ${T.greenBord}`,
+                  borderRadius:12, padding:36, maxWidth:440, textAlign:"center" }}>
+                  <div style={{ fontSize:36, marginBottom:12 }}>✉️</div>
+                  <div style={{ fontSize:17, fontWeight:600, fontFamily:F.serif, color:T.ink, marginBottom:8 }}>
+                    Check your email
+                  </div>
+                  <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.7 }}>
+                    We sent a magic link to <strong>{signInEmail}</strong>.<br/>
+                    Click it to sign in and see your orders.
+                  </div>
+                </div>
+              )}
+
+              {/* Signed in — show orders from Supabase */}
+              {user && (
+                dbLoading ? (
+                  <div style={{ padding:40, textAlign:"center", color:T.inkLight,
+                    fontFamily:F.sans, fontSize:13 }}>Loading your orders…</div>
+                ) : (dbOrders.length > 0 ? (
+                  <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                    {dbOrders.map(o => (
+                      <div key={o.id} style={{ background:T.surface, border:`1px solid ${T.border}`,
+                        borderRadius:10, padding:"16px 20px",
+                        boxShadow:"0 1px 3px rgba(17,20,24,0.04)" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between",
+                          alignItems:"flex-start", marginBottom:10 }}>
+                          <div>
+                            <div style={{ fontSize:10, fontFamily:F.mono, color:T.accent,
+                              fontWeight:700, letterSpacing:"1px", marginBottom:4 }}>{o.ref}</div>
+                            <div style={{ fontSize:14, fontWeight:600, color:T.ink }}>{o.scope_label}</div>
+                            <div style={{ fontSize:12, color:T.inkLight, marginTop:2 }}>
+                              {o.level_label} · {o.program}
+                            </div>
+                          </div>
+                          <div style={{ textAlign:"right" }}>
+                            <div style={{ fontSize:11, color:T.inkLight }}>Due</div>
+                            <div style={{ fontSize:13, fontWeight:600, color:T.ink }}>
+                              {o.due_date || "TBD"}
+                            </div>
                           </div>
                         </div>
-                        <div style={{ textAlign:"right" }}>
-                          <div style={{ fontSize:11, color:T.inkLight }}>Due</div>
-                          <div style={{ fontSize:13, fontWeight:600, color:T.ink }}>{o.due||"TBD"}</div>
+                        <div style={{ display:"inline-flex", alignItems:"center", gap:6,
+                          padding:"4px 10px", borderRadius:99, fontSize:11, fontWeight:600,
+                          background: o.status==="delivered"?T.greenBg:T.alt,
+                          color: o.status==="delivered"?T.green:T.inkMid,
+                          border:`1px solid ${o.status==="delivered"?T.greenBord:T.border}` }}>
+                          <span style={{ width:6, height:6, borderRadius:"50%", flexShrink:0,
+                            background: o.status==="delivered"?T.green:T.inkLight }} />
+                          {o.status.replace(/_/g," ")}
                         </div>
                       </div>
-                      <div style={{ display:"flex", alignItems:"center", gap:8,
-                        padding:"8px 12px", background:T.greenBg,
-                        border:`1px solid ${T.greenBord}`, borderRadius:7 }}>
-                        <span style={{ color:T.green, fontSize:14 }}>✓</span>
-                        <span style={{ fontSize:12, color:T.green, fontWeight:500 }}>
-                          Sent to WhatsApp — we'll confirm your quote within a few hours
-                        </span>
+                    ))}
+                    {sessionOrders.filter(so=>!dbOrders.find(db=>db.ref===so.ref)).map(o => (
+                      <div key={o.ref} style={{ background:T.surface, border:`1px solid ${T.border}`,
+                        borderRadius:10, padding:"16px 20px" }}>
+                        <div style={{ fontSize:10, fontFamily:F.mono, color:T.accent,
+                          fontWeight:700, marginBottom:4 }}>{o.ref}</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:T.ink }}>{o.scopeLabel}</div>
+                        <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:6,
+                          padding:"6px 10px", background:T.greenBg,
+                          border:`1px solid ${T.greenBord}`, borderRadius:7,
+                          fontSize:12, color:T.green, fontWeight:500 }}>
+                          ✓ Submitted — pending confirmation
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background:T.surface, border:`1px solid ${T.border}`,
+                    borderRadius:12, padding:52, textAlign:"center",
+                    boxShadow:"0 1px 3px rgba(17,20,24,0.04)" }}>
+                    <div style={{ fontSize:36, marginBottom:12 }}>📋</div>
+                    <div style={{ fontSize:18, fontWeight:600, fontFamily:F.serif,
+                      color:T.ink, marginBottom:6 }}>No orders yet</div>
+                    <div style={{ fontSize:13, color:T.inkLight, marginBottom:22 }}>
+                      Place your first order from the New Order tab.
                     </div>
-                  ))}
-                </div>
+                    <Btn onClick={()=>setNav("new")}>Place an Order →</Btn>
+                  </div>
+                ))
               )}
             </div>
           )}
@@ -1265,6 +1458,17 @@ function WorkspacePage({ onGoCatalog, onAdmin, defaultNav="new" }) {
 export default function CatalogApp({ onAdmin }) {
   const [page,       setPage]       = useState("catalog");
   const [defaultNav, setDefaultNav] = useState("new");
+  const [user,       setUser]       = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, session) => {
+      setUser(session?.user || null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   function goDesk(nav="new") { setDefaultNav(nav); setPage("workspace"); }
 
@@ -1274,7 +1478,7 @@ export default function CatalogApp({ onAdmin }) {
       {page==="catalog"
         ? <CatalogPage   onGoDesk={goDesk} />
         : <WorkspacePage onGoCatalog={()=>{ setPage("catalog"); setDefaultNav("new"); }}
-                         onAdmin={onAdmin} defaultNav={defaultNav} />}
+                         onAdmin={onAdmin} defaultNav={defaultNav} user={user} />}
     </div>
   );
 }
