@@ -74,12 +74,12 @@ function FL({ text, req }) {
   );
 }
 
-function TInput({ label, value, onChange, type="text", placeholder="", req=false, err=false }) {
+function TInput({ label, value, onChange, type="text", placeholder="", req=false, err=false, min="" }) {
   const [f, setF] = useState(false);
   return (
     <div style={{ marginBottom:14 }}>
       {label && <FL text={label} req={req} />}
-      <input value={value} onChange={e=>onChange(e.target.value)} type={type} placeholder={placeholder}
+      <input value={value} onChange={e=>onChange(e.target.value)} type={type} placeholder={placeholder} min={min||undefined}
         onFocus={()=>setF(true)} onBlur={()=>setF(false)}
         style={{ width:"100%", padding:"10px 13px", boxSizing:"border-box",
           border:`1.5px solid ${err?T.accent:f?T.inkMid:T.border}`,
@@ -163,7 +163,7 @@ function Badge({ children, color, bg, border }) {
 }
 
 // ORDER MODAL
-function OrderModal({ level, program, scope, onClose }) {
+function OrderModal({ level, program, scope, onClose, onPlaced }) {
   const [name,   setName]   = useState("");
   const [phone,  setPhone]  = useState("");
   const [email,  setEmail]  = useState("");
@@ -176,6 +176,7 @@ function OrderModal({ level, program, scope, onClose }) {
   const [loading,setLoading]= useState(false);
   const [done,   setDone]   = useState(false);
   const [oid,    setOid]    = useState("");
+  const [blockedUrl,setBlockedUrl]= useState(null);
   const hue = level?.hue || T.accent;
   const fn = name.trim().split(" ")[0];
 
@@ -192,7 +193,6 @@ function OrderModal({ level, program, scope, onClose }) {
     if(!due)          e.due=true;
     setErrs(e);
     if(Object.keys(e).length) return;
-    setLoading(true);
     const msg = ["📋 *New Order — Meridian Studio*","",
       `*Name:* ${name}`,`*WhatsApp:* ${phone}`,
       email?`*Email:* ${email}`:null,"",
@@ -200,16 +200,19 @@ function OrderModal({ level, program, scope, onClose }) {
       `*Scope:* ${scope?.label}`,`*Due:* ${due}`,
       `*Access:* ${access==="portal"?"Upload via portal":"Dedicated device + TeamViewer"}`,
       `*Payment:* ${pay}`,
-      brief?`*Brief:* ${brief.name}`:null,
+      brief?`*Brief:* ${brief.name} — please also send the file in WhatsApp`:null,
       notes?`*Notes:* ${notes}`:null,"",
       scope?.orderNote,
     ].filter(Boolean).join("\n");
     const id = "MS-"+Date.now().toString().slice(-5);
+    const url = `https://wa.me/12057279363?text=${encodeURIComponent(msg+"\n\n*Ref: "+id+"*")}`;
+    // Open immediately on the user gesture — delayed window.open is blocked by popup blockers
+    const win = window.open(url, "_blank");
     setOid(id);
-    setTimeout(() => {
-      setLoading(false); setDone(true);
-      window.open(`https://wa.me/12057279363?text=${encodeURIComponent(msg+"\n\n*Ref: "+id+"*")}`, "_blank");
-    }, 900);
+    setLoading(true);
+    if (!win || win.closed || typeof win.closed === "undefined") setBlockedUrl(url);
+    setTimeout(() => { setLoading(false); setDone(true); }, 900);
+    if (onPlaced) onPlaced({ ref:id, scopeLabel:scope?.label||"Order", level:level?.label, program, due });
   }
 
   return (
@@ -242,6 +245,23 @@ function OrderModal({ level, program, scope, onClose }) {
                 color:"rgba(255,255,255,0.3)", fontFamily:F.sans, marginBottom:4 }}>Order Reference</div>
               <div style={{ fontSize:20, fontWeight:600, fontFamily:F.mono, color:hue }}>{oid}</div>
             </div>
+            {blockedUrl && (
+              <a href={blockedUrl} target="_blank" rel="noreferrer"
+                style={{ display:"block", marginBottom:16, padding:"12px 20px",
+                  background:"rgba(185,28,28,0.2)", border:"1px solid rgba(185,28,28,0.35)",
+                  borderRadius:8, color:hue, fontSize:13, fontWeight:600,
+                  textAlign:"center", textDecoration:"none", fontFamily:F.sans }}>
+                WhatsApp didn't open — tap here to send your order →
+              </a>
+            )}
+            {brief && (
+              <div style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)",
+                borderRadius:8, padding:"10px 16px", marginBottom:18,
+                fontSize:12, color:"rgba(255,255,255,0.5)", lineHeight:1.6, textAlign:"left" }}>
+                📎 <strong style={{ color:"rgba(255,255,255,0.7)" }}>Attach your file:</strong>{" "}
+                Send <em>{brief.name}</em> directly in the WhatsApp conversation so your writer receives it.
+              </div>
+            )}
             <Btn variant="ghost" onClick={onClose}
               sx={{ background:"rgba(255,255,255,0.08)", color:"rgba(255,255,255,0.7)", border:"none" }}>
               Close
@@ -325,7 +345,7 @@ function OrderModal({ level, program, scope, onClose }) {
             <Divider label="Assignment" />
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
               <TInput label="Due Date" value={due} onChange={setDue}
-                type="date" req err={errs.due} />
+                type="date" req err={errs.due} min={new Date().toISOString().slice(0,10)} />
               <div style={{ marginBottom:14 }}>
                 <FL text="Course Access" />
                 <Seg value={access} onChange={setAccess}
@@ -438,7 +458,7 @@ function CatalogPage({ onGoDesk }) {
         </div>
         <nav style={{ display:"flex", gap:20, alignItems:"center", fontSize:13 }}>
           {["Catalog","My orders","How it works"].map((item,i) => (
-            <span key={item} onClick={i===1?onGoDesk:undefined}
+            <span key={item} onClick={i===1?()=>onGoDesk("orders"):undefined}
               style={{ color:i===0?T.ink:T.inkLight,
                 fontWeight:i===0?600:400,
                 borderBottom:i===0?`2px solid ${hue}`:"2px solid transparent",
@@ -715,13 +735,14 @@ function CatalogPage({ onGoDesk }) {
 }
 
 // WORKSPACE PAGE
-function WorkspacePage({ onGoCatalog, onAdmin }) {
+function WorkspacePage({ onGoCatalog, onAdmin, defaultNav="new" }) {
   const [lvId,  setLvId]  = useState("dnp");
   const [prog,  setProg]  = useState(PROGRAMS.dnp[0]);
   const [scope, setScope] = useState(null);
   const [showR, setShowR] = useState(false);
   const [modal, setModal] = useState(false);
-  const [nav,   setNav]   = useState("new");
+  const [nav,   setNav]   = useState(defaultNav);
+  const [sessionOrders, setSessionOrders] = useState([]);
 
   const lv   = LEVELS.find(l=>l.id===lvId);
   const prgs = PROGRAMS[lvId]||[];
@@ -793,280 +814,467 @@ function WorkspacePage({ onGoCatalog, onAdmin }) {
       <div style={{ display:"flex", flexDirection:"column", overflowY:"auto" }}>
         <div style={{ padding:"22px 28px 28px", display:"flex", flexDirection:"column", gap:18 }}>
 
+          {/* Breadcrumb */}
           <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:T.inkLight }}>
             <span style={{ cursor:"pointer" }} onClick={onGoCatalog}>Catalog</span>
             <span style={{ color:T.border }}>/</span>
-            <span style={{ color:T.ink, fontWeight:500 }}>New order</span>
+            <span style={{ color:T.ink, fontWeight:500 }}>
+              {navItems.find(n=>n.id===nav)?.label || "Workspace"}
+            </span>
           </div>
 
-          <div>
-            <h1 style={{ fontSize:22, fontWeight:600, letterSpacing:"-0.4px",
-              color:T.ink, marginBottom:3 }}>Configure your order</h1>
-            <p style={{ fontSize:13, color:T.inkLight }}>
-              Tell us your situation. We'll send a confirmed quote via WhatsApp once we review your brief.
-            </p>
-          </div>
+          {/* ── NEW ORDER panel ── */}
+          {nav==="new" && (<>
+            <div>
+              <h1 style={{ fontSize:22, fontWeight:600, letterSpacing:"-0.4px",
+                color:T.ink, marginBottom:3 }}>Configure your order</h1>
+              <p style={{ fontSize:13, color:T.inkLight }}>
+                Tell us your situation. We'll send a confirmed quote via WhatsApp once we review your brief.
+              </p>
+            </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:18, alignItems:"start" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:18, alignItems:"start" }}>
 
-            {/* Left */}
-            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              {/* Left */}
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
 
-              {/* Level card */}
-              <div style={{ background:T.surface, border:`1px solid ${T.border}`,
-                borderRadius:10, boxShadow:"0 1px 2px rgba(17,20,24,0.04)" }}>
-                <div style={{ padding:"12px 16px", borderBottom:`1px solid ${T.border}`,
-                  display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.8px",
-                    textTransform:"uppercase", color:T.inkLight,
-                    display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ width:18, height:18, borderRadius:"50%",
-                      background:T.ink, color:"#fff", fontSize:10, fontWeight:700,
-                      display:"flex", alignItems:"center", justifyContent:"center" }}>1</span>
-                    Level
+                {/* Level card */}
+                <div style={{ background:T.surface, border:`1px solid ${T.border}`,
+                  borderRadius:10, boxShadow:"0 1px 2px rgba(17,20,24,0.04)" }}>
+                  <div style={{ padding:"12px 16px", borderBottom:`1px solid ${T.border}`,
+                    display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.8px",
+                      textTransform:"uppercase", color:T.inkLight,
+                      display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ width:18, height:18, borderRadius:"50%",
+                        background:T.ink, color:"#fff", fontSize:10, fontWeight:700,
+                        display:"flex", alignItems:"center", justifyContent:"center" }}>1</span>
+                      Level
+                    </div>
+                    <button onClick={()=>setShowR(p=>!p)}
+                      style={{ background:"transparent", border:"none", color:hue,
+                        fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:F.sans }}>
+                      {showR?"▲ Rate sheet":"▼ Rate sheet"}
+                    </button>
                   </div>
-                  <button onClick={()=>setShowR(p=>!p)}
-                    style={{ background:"transparent", border:"none", color:hue,
-                      fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:F.sans }}>
-                    {showR?"▲ Rate sheet":"▼ Rate sheet"}
-                  </button>
-                </div>
-                <div style={{ padding:"14px 16px" }}>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8 }}>
-                    {LEVELS.map(l => {
-                      const on = l.id===lvId;
-                      return (
-                        <button key={l.id} onClick={()=>chgLv(l.id)}
-                          style={{ padding:"12px 10px", borderRadius:8, textAlign:"left",
-                            cursor:"pointer", border:`1px solid ${on?l.hue:T.border}`,
-                            background:on?l.hue+"08":T.surface,
-                            boxShadow:on?`inset 0 0 0 1px ${l.hue}30`:"none",
-                            transition:"all 0.12s", fontFamily:F.sans }}>
-                          <div style={{ display:"inline-flex", padding:"2px 6px", borderRadius:4,
-                            background:on?l.hue:T.alt, color:on?"#fff":T.inkLight,
-                            fontSize:9, fontWeight:700, letterSpacing:"0.4px", marginBottom:7 }}>
-                            {l.abbr}
-                          </div>
-                          <div style={{ fontSize:13, fontWeight:600,
-                            color:on?l.hue:T.ink, marginBottom:2, lineHeight:1.2 }}>{l.label}</div>
-                          <div style={{ fontSize:11, color:T.inkLight, lineHeight:1.3 }}>{l.sub}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {showR && (
-                    <div style={{ marginTop:12, padding:"12px 14px",
-                      background:T.alt, border:`1px solid ${T.border}`, borderRadius:8 }}>
-                      <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.8px",
-                        textTransform:"uppercase", color:T.inkLight, marginBottom:8 }}>
-                        Per-page rates · Writing / Project
-                      </div>
+                  <div style={{ padding:"14px 16px" }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8 }}>
                       {LEVELS.map(l => {
                         const on = l.id===lvId;
                         return (
-                          <div key={l.id} style={{ display:"flex", alignItems:"center",
-                            gap:10, padding:"4px 0", fontSize:11 }}>
-                            <div style={{ width:90, color:on?l.hue:T.inkMid, fontWeight:on?600:400 }}>{l.label}</div>
-                            <div style={{ flex:1, height:5, background:T.border, borderRadius:3, overflow:"hidden" }}>
-                              <div style={{ width:`${(l.rW/maxW)*100}%`, height:"100%",
-                                background:on?l.hue:T.borderMid, borderRadius:3 }} />
+                          <button key={l.id} onClick={()=>chgLv(l.id)}
+                            style={{ padding:"12px 10px", borderRadius:8, textAlign:"left",
+                              cursor:"pointer", border:`1px solid ${on?l.hue:T.border}`,
+                              background:on?l.hue+"08":T.surface,
+                              boxShadow:on?`inset 0 0 0 1px ${l.hue}30`:"none",
+                              transition:"all 0.12s", fontFamily:F.sans }}>
+                            <div style={{ display:"inline-flex", padding:"2px 6px", borderRadius:4,
+                              background:on?l.hue:T.alt, color:on?"#fff":T.inkLight,
+                              fontSize:9, fontWeight:700, letterSpacing:"0.4px", marginBottom:7 }}>
+                              {l.abbr}
                             </div>
-                            <div style={{ width:52, fontFamily:F.mono, textAlign:"right",
-                              color:on?l.hue:T.inkLight, fontWeight:on?600:400 }}>
-                              ${l.rW}/pg
-                            </div>
-                            <div style={{ flex:1, height:5, background:T.border, borderRadius:3,
-                              overflow:"hidden", opacity:l.rP?1:0.3 }}>
-                              {l.rP && <div style={{ width:`${(l.rP/maxP)*100}%`, height:"100%",
-                                background:on?l.hue:T.borderMid, borderRadius:3 }} />}
-                            </div>
-                            <div style={{ width:52, fontFamily:F.mono, textAlign:"right",
-                              color:on?l.hue:T.inkLight, fontWeight:on?600:400 }}>
-                              {l.rP?`$${l.rP}/pg`:"—"}
-                            </div>
-                          </div>
+                            <div style={{ fontSize:13, fontWeight:600,
+                              color:on?l.hue:T.ink, marginBottom:2, lineHeight:1.2 }}>{l.label}</div>
+                            <div style={{ fontSize:11, color:T.inkLight, lineHeight:1.3 }}>{l.sub}</div>
+                          </button>
                         );
                       })}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Program card */}
-              <div style={{ background:T.surface, border:`1px solid ${T.border}`,
-                borderRadius:10, boxShadow:"0 1px 2px rgba(17,20,24,0.04)" }}>
-                <div style={{ padding:"12px 16px", borderBottom:`1px solid ${T.border}` }}>
-                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.8px",
-                    textTransform:"uppercase", color:T.inkLight,
-                    display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ width:18, height:18, borderRadius:"50%",
-                      background:T.ink, color:"#fff", fontSize:10, fontWeight:700,
-                      display:"flex", alignItems:"center", justifyContent:"center" }}>2</span>
-                    School & program
-                  </div>
-                </div>
-                <div style={{ padding:"14px 16px" }}>
-                  <select value={prog} onChange={e=>{ setProg(e.target.value); setScope(null); }}
-                    style={{ width:"100%", padding:"10px 12px", border:`1px solid ${T.border}`,
-                      borderRadius:8, fontSize:13, fontFamily:F.sans, color:T.ink,
-                      background:T.surface, outline:"none", appearance:"none",
-                      backgroundImage:`url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>")`,
-                      backgroundRepeat:"no-repeat", backgroundPosition:"right 12px center", paddingRight:32 }}>
-                    {prgs.map(p=><option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Scope card */}
-              <div style={{ background:T.surface, border:`1px solid ${T.border}`,
-                borderRadius:10, boxShadow:"0 1px 2px rgba(17,20,24,0.04)" }}>
-                <div style={{ padding:"12px 16px", borderBottom:`1px solid ${T.border}` }}>
-                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.8px",
-                    textTransform:"uppercase", color:T.inkLight,
-                    display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ width:18, height:18, borderRadius:"50%",
-                      background:T.ink, color:"#fff", fontSize:10, fontWeight:700,
-                      display:"flex", alignItems:"center", justifyContent:"center" }}>3</span>
-                    Scope
-                  </div>
-                </div>
-                <div style={{ padding:"14px 16px", display:"flex", flexDirection:"column", gap:14 }}>
-                  {SCOPE_TIERS.map(tier => (
-                    <div key={tier.id}>
-                      <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:8 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{tier.title}</div>
-                        <div style={{ fontSize:12, color:T.inkLight }}>{tier.summary}</div>
-                      </div>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                        {tier.options.map(opt => {
-                          const on = opt.id===scope;
+                    {showR && (
+                      <div style={{ marginTop:12, padding:"12px 14px",
+                        background:T.alt, border:`1px solid ${T.border}`, borderRadius:8 }}>
+                        <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.8px",
+                          textTransform:"uppercase", color:T.inkLight, marginBottom:8 }}>
+                          Per-page rates · Writing / Project
+                        </div>
+                        {LEVELS.map(l => {
+                          const on = l.id===lvId;
                           return (
-                            <div key={opt.id} onClick={()=>setScope(opt.id)}
-                              style={{ padding:"12px 14px", borderRadius:8, cursor:"pointer",
-                                border:`1px solid ${on?hue:T.border}`,
-                                background:on?hue+"08":T.surface,
-                                transition:"all 0.12s",
-                                display:"flex", alignItems:"flex-start", gap:10 }}>
-                              <div style={{ width:16, height:16, borderRadius:"50%", flexShrink:0, marginTop:2,
-                                border:`1.5px solid ${on?hue:T.borderMid}`, background:on?hue:T.surface,
-                                display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                {on && <div style={{ width:5, height:5, borderRadius:"50%", background:"#fff" }} />}
+                            <div key={l.id} style={{ display:"flex", alignItems:"center",
+                              gap:10, padding:"4px 0", fontSize:11 }}>
+                              <div style={{ width:90, color:on?l.hue:T.inkMid, fontWeight:on?600:400 }}>{l.label}</div>
+                              <div style={{ flex:1, height:5, background:T.border, borderRadius:3, overflow:"hidden" }}>
+                                <div style={{ width:`${(l.rW/maxW)*100}%`, height:"100%",
+                                  background:on?l.hue:T.borderMid, borderRadius:3 }} />
                               </div>
-                              <div style={{ flex:1 }}>
-                                <div style={{ fontSize:13, fontWeight:600, color:on?hue:T.ink,
-                                  marginBottom:3, lineHeight:1.3 }}>{opt.label}</div>
-                                <div style={{ fontSize:11.5, color:T.inkLight, lineHeight:1.55 }}>{opt.detail}</div>
-                                <div style={{ display:"flex", gap:5, marginTop:6, flexWrap:"wrap" }}>
-                                  {opt.bundle  && <Badge color={T.green} bg={T.greenBg} border={T.greenBord}>10% bundle</Badge>}
-                                  {opt.doctoral && <Badge color={T.accent} bg={T.accentSoft} border={T.accentMid}>Includes project</Badge>}
-                                </div>
+                              <div style={{ width:52, fontFamily:F.mono, textAlign:"right",
+                                color:on?l.hue:T.inkLight, fontWeight:on?600:400 }}>
+                                ${l.rW}/pg
+                              </div>
+                              <div style={{ flex:1, height:5, background:T.border, borderRadius:3,
+                                overflow:"hidden", opacity:l.rP?1:0.3 }}>
+                                {l.rP && <div style={{ width:`${(l.rP/maxP)*100}%`, height:"100%",
+                                  background:on?l.hue:T.borderMid, borderRadius:3 }} />}
+                              </div>
+                              <div style={{ width:52, fontFamily:F.mono, textAlign:"right",
+                                color:on?l.hue:T.inkLight, fontWeight:on?600:400 }}>
+                                {l.rP?`$${l.rP}/pg`:"—"}
                               </div>
                             </div>
                           );
                         })}
                       </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Program card */}
+                <div style={{ background:T.surface, border:`1px solid ${T.border}`,
+                  borderRadius:10, boxShadow:"0 1px 2px rgba(17,20,24,0.04)" }}>
+                  <div style={{ padding:"12px 16px", borderBottom:`1px solid ${T.border}` }}>
+                    <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.8px",
+                      textTransform:"uppercase", color:T.inkLight,
+                      display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ width:18, height:18, borderRadius:"50%",
+                        background:T.ink, color:"#fff", fontSize:10, fontWeight:700,
+                        display:"flex", alignItems:"center", justifyContent:"center" }}>2</span>
+                      School & program
                     </div>
-                  ))}
+                  </div>
+                  <div style={{ padding:"14px 16px" }}>
+                    <select value={prog} onChange={e=>{ setProg(e.target.value); setScope(null); }}
+                      style={{ width:"100%", padding:"10px 12px", border:`1px solid ${T.border}`,
+                        borderRadius:8, fontSize:13, fontFamily:F.sans, color:T.ink,
+                        background:T.surface, outline:"none", appearance:"none",
+                        backgroundImage:`url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>")`,
+                        backgroundRepeat:"no-repeat", backgroundPosition:"right 12px center", paddingRight:32 }}>
+                      {prgs.map(p=><option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Scope card */}
+                <div style={{ background:T.surface, border:`1px solid ${T.border}`,
+                  borderRadius:10, boxShadow:"0 1px 2px rgba(17,20,24,0.04)" }}>
+                  <div style={{ padding:"12px 16px", borderBottom:`1px solid ${T.border}` }}>
+                    <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.8px",
+                      textTransform:"uppercase", color:T.inkLight,
+                      display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ width:18, height:18, borderRadius:"50%",
+                        background:T.ink, color:"#fff", fontSize:10, fontWeight:700,
+                        display:"flex", alignItems:"center", justifyContent:"center" }}>3</span>
+                      Scope
+                    </div>
+                  </div>
+                  <div style={{ padding:"14px 16px", display:"flex", flexDirection:"column", gap:14 }}>
+                    {SCOPE_TIERS.map(tier => (
+                      <div key={tier.id}>
+                        <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:8 }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{tier.title}</div>
+                          <div style={{ fontSize:12, color:T.inkLight }}>{tier.summary}</div>
+                        </div>
+                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                          {tier.options.map(opt => {
+                            const on = opt.id===scope;
+                            return (
+                              <div key={opt.id} onClick={()=>setScope(opt.id)}
+                                style={{ padding:"12px 14px", borderRadius:8, cursor:"pointer",
+                                  border:`1px solid ${on?hue:T.border}`,
+                                  background:on?hue+"08":T.surface,
+                                  transition:"all 0.12s",
+                                  display:"flex", alignItems:"flex-start", gap:10 }}>
+                                <div style={{ width:16, height:16, borderRadius:"50%", flexShrink:0, marginTop:2,
+                                  border:`1.5px solid ${on?hue:T.borderMid}`, background:on?hue:T.surface,
+                                  display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                  {on && <div style={{ width:5, height:5, borderRadius:"50%", background:"#fff" }} />}
+                                </div>
+                                <div style={{ flex:1 }}>
+                                  <div style={{ fontSize:13, fontWeight:600, color:on?hue:T.ink,
+                                    marginBottom:3, lineHeight:1.3 }}>{opt.label}</div>
+                                  <div style={{ fontSize:11.5, color:T.inkLight, lineHeight:1.55 }}>{opt.detail}</div>
+                                  <div style={{ display:"flex", gap:5, marginTop:6, flexWrap:"wrap" }}>
+                                    {opt.bundle  && <Badge color={T.green} bg={T.greenBg} border={T.greenBord}>10% bundle</Badge>}
+                                    {opt.doctoral && <Badge color={T.accent} bg={T.accentSoft} border={T.accentMid}>Includes project</Badge>}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right rail */}
-            <div style={{ position:"sticky", top:22, display:"flex", flexDirection:"column", gap:12 }}>
-              <div style={{ background:T.side, color:"#fff", borderRadius:10,
-                overflow:"hidden", boxShadow:"0 8px 30px rgba(17,20,24,0.12)" }}>
-                <div style={{ padding:"14px 16px 12px", borderBottom:`1px solid ${T.sideBorder}` }}>
-                  <div style={{ fontSize:10, fontWeight:700, letterSpacing:"1px",
-                    textTransform:"uppercase", color:hue, marginBottom:6 }}>Order summary</div>
-                  <div style={{ fontSize:14, fontWeight:600, lineHeight:1.35, marginBottom:6 }}>
-                    {sc ? sc.label : "Choose a scope to continue"}
-                  </div>
-                  {sc && <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)" }}>{sc.tierTitle}</div>}
-                </div>
-                <div style={{ padding:"12px 16px 4px", display:"flex", flexDirection:"column", gap:10 }}>
-                  {[["Level",lv.label],["Program",prog]].map(([l,v]) => (
-                    <div key={l} style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
-                      <span style={{ color:"rgba(255,255,255,0.4)" }}>{l}</span>
-                      <span style={{ color:"#fff", fontWeight:500, textAlign:"right", maxWidth:"60%" }}>{v}</span>
+              {/* Right rail */}
+              <div style={{ position:"sticky", top:22, display:"flex", flexDirection:"column", gap:12 }}>
+                <div style={{ background:T.side, color:"#fff", borderRadius:10,
+                  overflow:"hidden", boxShadow:"0 8px 30px rgba(17,20,24,0.12)" }}>
+                  <div style={{ padding:"14px 16px 12px", borderBottom:`1px solid ${T.sideBorder}` }}>
+                    <div style={{ fontSize:10, fontWeight:700, letterSpacing:"1px",
+                      textTransform:"uppercase", color:hue, marginBottom:6 }}>Order summary</div>
+                    <div style={{ fontSize:14, fontWeight:600, lineHeight:1.35, marginBottom:6 }}>
+                      {sc ? sc.label : "Choose a scope to continue"}
                     </div>
-                  ))}
-                </div>
-                <div style={{ margin:"8px 16px 0", padding:"10px 12px",
-                  background:"rgba(255,255,255,0.04)", border:`1px solid ${T.sideBorder}`, borderRadius:8 }}>
-                  <div style={{ display:"flex", justifyContent:"space-between",
-                    alignItems:"baseline", fontSize:12, padding:"4px 0" }}>
-                    <span style={{ color:"rgba(255,255,255,0.5)" }}>Writing</span>
-                    <span style={{ color:hue, fontWeight:600, fontFamily:F.mono, fontSize:13 }}>${lv.rW}/pg</span>
+                    {sc && <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)" }}>{sc.tierTitle}</div>}
                   </div>
-                  {lv.rP && (
+                  <div style={{ padding:"12px 16px 4px", display:"flex", flexDirection:"column", gap:10 }}>
+                    {[["Level",lv.label],["Program",prog]].map(([l,v]) => (
+                      <div key={l} style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
+                        <span style={{ color:"rgba(255,255,255,0.4)" }}>{l}</span>
+                        <span style={{ color:"#fff", fontWeight:500, textAlign:"right", maxWidth:"60%" }}>{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ margin:"8px 16px 0", padding:"10px 12px",
+                    background:"rgba(255,255,255,0.04)", border:`1px solid ${T.sideBorder}`, borderRadius:8 }}>
                     <div style={{ display:"flex", justifyContent:"space-between",
                       alignItems:"baseline", fontSize:12, padding:"4px 0" }}>
-                      <span style={{ color:"rgba(255,255,255,0.5)" }}>Project</span>
-                      <span style={{ color:hue, fontWeight:600, fontFamily:F.mono, fontSize:13 }}>${lv.rP}/pg</span>
+                      <span style={{ color:"rgba(255,255,255,0.5)" }}>Writing</span>
+                      <span style={{ color:hue, fontWeight:600, fontFamily:F.mono, fontSize:13 }}>${lv.rW}/pg</span>
+                    </div>
+                    {lv.rP && (
+                      <div style={{ display:"flex", justifyContent:"space-between",
+                        alignItems:"baseline", fontSize:12, padding:"4px 0" }}>
+                        <span style={{ color:"rgba(255,255,255,0.5)" }}>Project</span>
+                        <span style={{ color:hue, fontWeight:600, fontFamily:F.mono, fontSize:13 }}>${lv.rP}/pg</span>
+                      </div>
+                    )}
+                    {sc && (
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline",
+                        fontSize:12, padding:"8px 0 4px", marginTop:4, borderTop:`1px solid ${T.sideBorder}` }}>
+                        <span style={{ color:"rgba(255,255,255,0.5)" }}>Total</span>
+                        <span style={{ color:"rgba(255,255,255,0.45)", fontStyle:"italic", fontSize:11 }}>
+                          Confirmed after brief
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {sc?.bundle && (
+                    <div style={{ margin:"8px 16px 0", padding:"8px 12px",
+                      background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.25)",
+                      borderRadius:8, fontSize:11, color:"#34D399",
+                      fontWeight:500, display:"flex", alignItems:"center", gap:8 }}>
+                      ✓ 10% bundle saving applies to final quote
                     </div>
                   )}
-                  {sc && (
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline",
-                      fontSize:12, padding:"8px 0 4px", marginTop:4, borderTop:`1px solid ${T.sideBorder}` }}>
-                      <span style={{ color:"rgba(255,255,255,0.5)" }}>Total</span>
-                      <span style={{ color:"rgba(255,255,255,0.45)", fontStyle:"italic", fontSize:11 }}>
-                        Confirmed after brief
-                      </span>
+                  <div style={{ padding:"14px 16px 16px" }}>
+                    <button onClick={()=>{ if(sc) setModal(true); }} disabled={!sc}
+                      style={{ width:"100%", padding:"11px", fontSize:13, fontWeight:600,
+                        background:sc?hue:"rgba(255,255,255,0.08)",
+                        color:sc?"#fff":"rgba(255,255,255,0.3)",
+                        border:"none", borderRadius:8,
+                        cursor:sc?"pointer":"not-allowed", fontFamily:F.sans, transition:"all 0.15s" }}>
+                      {sc ? "Proceed to order →" : "Choose a scope"}
+                    </button>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)",
+                      marginTop:8, textAlign:"center", lineHeight:1.5 }}>
+                      Upload your brief next · 50% deposit · Balance on delivery
                     </div>
-                  )}
-                </div>
-                {sc?.bundle && (
-                  <div style={{ margin:"8px 16px 0", padding:"8px 12px",
-                    background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.25)",
-                    borderRadius:8, fontSize:11, color:"#34D399",
-                    fontWeight:500, display:"flex", alignItems:"center", gap:8 }}>
-                    ✓ 10% bundle saving applies to final quote
-                  </div>
-                )}
-                <div style={{ padding:"14px 16px 16px" }}>
-                  <button onClick={()=>{ if(sc) setModal(true); }} disabled={!sc}
-                    style={{ width:"100%", padding:"11px", fontSize:13, fontWeight:600,
-                      background:sc?hue:"rgba(255,255,255,0.08)",
-                      color:sc?"#fff":"rgba(255,255,255,0.3)",
-                      border:"none", borderRadius:8,
-                      cursor:sc?"pointer":"not-allowed", fontFamily:F.sans, transition:"all 0.15s" }}>
-                    {sc ? "Proceed to order →" : "Choose a scope"}
-                  </button>
-                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)",
-                    marginTop:8, textAlign:"center", lineHeight:1.5 }}>
-                    Upload your brief next · 50% deposit · Balance on delivery
                   </div>
                 </div>
-              </div>
-              <div style={{ background:T.surface, border:`1px solid ${T.border}`,
-                borderRadius:10, padding:"12px 14px",
-                display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ width:28, height:28, borderRadius:"50%", background:T.alt,
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>💬</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12, fontWeight:600, color:T.ink }}>Need to talk first?</div>
-                  <div style={{ fontSize:11, color:T.inkLight, marginTop:1 }}>WhatsApp us · usually replies in ~10m</div>
+                <div style={{ background:T.surface, border:`1px solid ${T.border}`,
+                  borderRadius:10, padding:"12px 14px",
+                  display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:28, height:28, borderRadius:"50%", background:T.alt,
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>💬</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:T.ink }}>Need to talk first?</div>
+                    <div style={{ fontSize:11, color:T.inkLight, marginTop:1 }}>WhatsApp us · usually replies in ~10m</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </>)}
+
+          {/* ── MY ORDERS panel ── */}
+          {nav==="orders" && (
+            <div>
+              <div style={{ marginBottom:20 }}>
+                <h1 style={{ fontSize:22, fontWeight:600, letterSpacing:"-0.4px",
+                  color:T.ink, marginBottom:3 }}>My Orders</h1>
+                <p style={{ fontSize:13, color:T.inkLight }}>Orders placed in this session.</p>
+              </div>
+              {sessionOrders.length===0 ? (
+                <div style={{ background:T.surface, border:`1px solid ${T.border}`,
+                  borderRadius:12, padding:52, textAlign:"center",
+                  boxShadow:"0 1px 3px rgba(17,20,24,0.04)" }}>
+                  <div style={{ fontSize:36, marginBottom:12 }}>📋</div>
+                  <div style={{ fontSize:18, fontWeight:600, fontFamily:F.serif,
+                    color:T.ink, marginBottom:6 }}>No orders yet</div>
+                  <div style={{ fontSize:13, color:T.inkLight, marginBottom:22, lineHeight:1.6 }}>
+                    Place your first order from the New Order tab.
+                  </div>
+                  <Btn onClick={()=>setNav("new")}>Place an Order →</Btn>
+                </div>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {sessionOrders.map(o => (
+                    <div key={o.ref} style={{ background:T.surface, border:`1px solid ${T.border}`,
+                      borderRadius:10, padding:"16px 20px",
+                      boxShadow:"0 1px 3px rgba(17,20,24,0.04)" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+                        <div>
+                          <div style={{ fontSize:10, fontFamily:F.mono, color:T.accent,
+                            fontWeight:700, letterSpacing:"1px", marginBottom:4 }}>{o.ref}</div>
+                          <div style={{ fontSize:14, fontWeight:600, color:T.ink }}>{o.scopeLabel}</div>
+                          <div style={{ fontSize:12, color:T.inkLight, marginTop:2 }}>
+                            {o.level} · {o.program}
+                          </div>
+                        </div>
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:11, color:T.inkLight }}>Due</div>
+                          <div style={{ fontSize:13, fontWeight:600, color:T.ink }}>{o.due||"TBD"}</div>
+                        </div>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:8,
+                        padding:"8px 12px", background:T.greenBg,
+                        border:`1px solid ${T.greenBord}`, borderRadius:7 }}>
+                        <span style={{ color:T.green, fontSize:14 }}>✓</span>
+                        <span style={{ fontSize:12, color:T.green, fontWeight:500 }}>
+                          Sent to WhatsApp — we'll confirm your quote within a few hours
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── MESSAGES panel ── */}
+          {nav==="messages" && (
+            <div>
+              <div style={{ marginBottom:20 }}>
+                <h1 style={{ fontSize:22, fontWeight:600, letterSpacing:"-0.4px",
+                  color:T.ink, marginBottom:3 }}>Messages</h1>
+                <p style={{ fontSize:13, color:T.inkLight }}>Reach out to our team directly on WhatsApp.</p>
+              </div>
+              <div style={{ background:T.surface, border:`1px solid ${T.border}`,
+                borderRadius:12, padding:36, textAlign:"center", maxWidth:480,
+                boxShadow:"0 1px 3px rgba(17,20,24,0.04)" }}>
+                <div style={{ fontSize:42, marginBottom:14 }}>💬</div>
+                <div style={{ fontSize:18, fontWeight:600, fontFamily:F.serif,
+                  color:T.ink, marginBottom:8 }}>Chat with us on WhatsApp</div>
+                <div style={{ fontSize:13, color:T.inkLight, lineHeight:1.75, marginBottom:24, maxWidth:340, margin:"0 auto 24px" }}>
+                  Questions about an order? Need a quick quote? Our team typically replies within 10 minutes.
+                </div>
+                <a href="https://wa.me/12057279363" target="_blank" rel="noreferrer"
+                  style={{ display:"inline-block", padding:"12px 28px",
+                    background:T.side, color:"#fff", borderRadius:10,
+                    fontFamily:F.sans, fontWeight:600, fontSize:13, textDecoration:"none" }}>
+                  Open WhatsApp →
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* ── RATE SHEET panel ── */}
+          {nav==="rates" && (
+            <div>
+              <div style={{ marginBottom:20 }}>
+                <h1 style={{ fontSize:22, fontWeight:600, letterSpacing:"-0.4px",
+                  color:T.ink, marginBottom:3 }}>Rate Sheet</h1>
+                <p style={{ fontSize:13, color:T.inkLight }}>Current per-page rates by academic level.</p>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
+                {LEVELS.map(l => (
+                  <div key={l.id} style={{ background:T.surface, border:`1px solid ${T.border}`,
+                    borderRadius:10, padding:"16px 20px",
+                    display:"flex", alignItems:"center", gap:16,
+                    boxShadow:"0 1px 3px rgba(17,20,24,0.04)" }}>
+                    <div style={{ width:42, height:42, borderRadius:10, flexShrink:0,
+                      background:l.hue+"15", border:`1px solid ${l.hue}30`,
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      color:l.hue, fontWeight:700, fontSize:11 }}>
+                      {l.abbr}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14, fontWeight:600, color:T.ink }}>{l.label}</div>
+                      <div style={{ fontSize:12, color:T.inkLight, marginTop:1 }}>{l.sub}</div>
+                    </div>
+                    <div style={{ display:"flex", gap:14, alignItems:"center" }}>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontSize:10, color:T.inkLight, marginBottom:2 }}>Writing</div>
+                        <div style={{ fontSize:17, fontWeight:700, fontFamily:F.mono, color:l.hue }}>
+                          ${l.rW}/pg
+                        </div>
+                      </div>
+                      {l.rP && (
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:10, color:T.inkLight, marginBottom:2 }}>Project</div>
+                          <div style={{ fontSize:17, fontWeight:700, fontFamily:F.mono, color:T.accent }}>
+                            ${l.rP}/pg
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding:"14px 18px", background:T.alt, border:`1px solid ${T.border}`,
+                borderRadius:10, fontSize:12, color:T.inkMid, lineHeight:1.75 }}>
+                50% deposit secures your slot · Balance paid on delivery ·
+                10% bundle discount when booking all core courses or all doctoral project phases ·
+                Final quote confirmed after brief review
+              </div>
+            </div>
+          )}
+
+          {/* ── HOW IT WORKS panel ── */}
+          {nav==="how" && (
+            <div>
+              <div style={{ marginBottom:24 }}>
+                <h1 style={{ fontSize:22, fontWeight:600, letterSpacing:"-0.4px",
+                  color:T.ink, marginBottom:3 }}>How It Works</h1>
+                <p style={{ fontSize:13, color:T.inkLight }}>From first contact to final delivery.</p>
+              </div>
+              {[
+                { n:1, title:"Select your level, program & scope",
+                  body:"Use the catalog to pick your academic level, school, and how much of your program you need covered. Each option shows the relevant per-page rate upfront." },
+                { n:2, title:"Submit your brief",
+                  body:"Fill in your contact details, due date, and attach your rubric or assignment instructions. The more detail you provide, the faster we can confirm your quote." },
+                { n:3, title:"Quote confirmation via WhatsApp",
+                  body:"We review your brief and send a confirmed, itemised quote within a few hours. A 50% deposit secures your slot in the schedule." },
+                { n:4, title:"Work begins",
+                  body:"Your assigned writer starts immediately after deposit confirmation. You'll receive progress updates via WhatsApp throughout." },
+                { n:5, title:"Delivery & balance payment",
+                  body:"Completed work is delivered before your due date. The remaining 50% balance is due on delivery." },
+              ].map((step, i) => (
+                <div key={step.n} style={{ display:"flex", gap:16, marginBottom:22 }}>
+                  <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
+                    <div style={{ width:32, height:32, borderRadius:"50%", background:T.side,
+                      color:"#fff", display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:13, fontWeight:700 }}>
+                      {step.n}
+                    </div>
+                    {i < 4 && <div style={{ width:1, flex:1, minHeight:16, background:T.border, marginTop:4 }} />}
+                  </div>
+                  <div style={{ paddingTop:4, paddingBottom:i<4?16:0 }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:T.ink, marginBottom:5 }}>
+                      {step.title}
+                    </div>
+                    <div style={{ fontSize:13, color:T.inkMid, lineHeight:1.7 }}>{step.body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
 
-      {modal && <OrderModal level={lv} program={prog} scope={sc} onClose={()=>setModal(false)} />}
+      {modal && <OrderModal level={lv} program={prog} scope={sc} onClose={()=>setModal(false)}
+        onPlaced={o=>setSessionOrders(p=>[...p,o])} />}
     </div>
   );
 }
 
 // ROOT — exported as CatalogApp so the top-level App.jsx can route between this and the OMS
 export default function CatalogApp({ onAdmin }) {
-  const [page, setPage] = useState("catalog");
+  const [page,       setPage]       = useState("catalog");
+  const [defaultNav, setDefaultNav] = useState("new");
+
+  function goDesk(nav="new") { setDefaultNav(nav); setPage("workspace"); }
+
   return (
     <div style={{ height:"100vh", display:"flex", flexDirection:"column",
       fontFamily:F.sans, background:T.bg }}>
       {page==="catalog"
-        ? <CatalogPage   onGoDesk={()=>setPage("workspace")} />
-        : <WorkspacePage onGoCatalog={()=>setPage("catalog")} onAdmin={onAdmin} />}
+        ? <CatalogPage   onGoDesk={goDesk} />
+        : <WorkspacePage onGoCatalog={()=>{ setPage("catalog"); setDefaultNav("new"); }}
+                         onAdmin={onAdmin} defaultNav={defaultNav} />}
     </div>
   );
 }

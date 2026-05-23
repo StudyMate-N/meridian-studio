@@ -87,12 +87,12 @@ const WRITERS = [
 ];
 
 const ORDERS_SEED = [
-  { id:"MS-041", clientId:"c1", writerId:"w1", school:"Capella University", program:"DNP – Flex Path", course:"NHS-FPX 8002", title:"Collaboration, Communication & Case Analysis", status:"delivered", pay:"paid",    due:"2025-11-20", created:"2025-11-05", priority:"normal", files:[{name:"NHS8002_Brief.pdf",kind:"brief"},{name:"NHS8002_Final.docx",kind:"final"}],   notes:"Distinguished grade. Client very pleased.", log:[{on:"2025-11-05",msg:"Order created"},{on:"2025-11-06",msg:"Brief uploaded by client"},{on:"2025-11-13",msg:"Assigned to Alex N."},{on:"2025-11-17",msg:"Final delivered"}] },
-  { id:"MS-042", clientId:"c1", writerId:"w1", school:"Capella University", program:"DNP – Flex Path", course:"NURS-FPX 8010", title:"Policy & Advocacy in DNP Practice",           status:"writing", pay:"partial", due:"2025-12-10", created:"2025-11-22", priority:"normal", files:[{name:"8010_Rubric.pdf",kind:"brief"}],                                                  notes:"", log:[{on:"2025-11-22",msg:"Order created"},{on:"2025-11-23",msg:"Brief received"},{on:"2025-11-24",msg:"Writing started"}] },
-  { id:"MS-043", clientId:"c2", writerId:"w2", school:"Capella University", program:"DNP – Flex Path", course:"NHS-FPX 8002", title:"Collaboration, Communication & Case Analysis", status:"review",  pay:"partial", due:"2025-12-08", created:"2025-11-23", priority:"high",   files:[{name:"Martha_Brief.pdf",kind:"brief"},{name:"Martha_Draft.docx",kind:"draft"}],       notes:"", log:[{on:"2025-11-23",msg:"Order created"},{on:"2025-11-24",msg:"Brief received"},{on:"2025-11-27",msg:"Draft submitted for review"}] },
-  { id:"MS-044", clientId:"c1", writerId:null,  school:"Capella University", program:"DNP – Flex Path", course:"NURS-FPX 9100", title:"Doctoral Project I – Defining the Project",  status:"new",     pay:"unpaid",  due:"2025-12-20", created:"2025-11-25", priority:"normal", files:[],                                                                                       notes:"Awaiting brief and deposit confirmation.", log:[{on:"2025-11-25",msg:"Order created by admin"}] },
-  { id:"MS-045", clientId:"c3", writerId:"w2", school:"Walden University",  program:"MSN – PMHNP",    course:"NURS 6630",     title:"Psychotherapy Across the Lifespan",           status:"brief",   pay:"partial", due:"2025-12-15", created:"2025-11-26", priority:"normal", files:[{name:"NURS6630_Brief.pdf",kind:"brief"}],                                              notes:"", log:[{on:"2025-11-26",msg:"Order created"},{on:"2025-11-27",msg:"Brief received from Darius"}] },
-  { id:"MS-046", clientId:"c2", writerId:"w1", school:"Capella University", program:"DNP – Flex Path", course:"NURS-FPX 8030", title:"Evidence-Based Practice & Applied Research",  status:"revision",pay:"partial", due:"2025-12-05", created:"2025-11-18", priority:"urgent", files:[{name:"8030_v1.docx",kind:"final"},{name:"Faculty_Notes.pdf",kind:"revision"}],         notes:"Faculty requests more citations in section 3.", log:[{on:"2025-11-18",msg:"Order created"},{on:"2025-11-21",msg:"Writing started"},{on:"2025-11-28",msg:"Delivered"},{on:"2025-11-29",msg:"Revision requested"}] },
+  { id:"MS-041", clientId:"c1", writerId:"w1", school:"Capella University", program:"DNP – Flex Path", course:"NHS-FPX 8002", title:"Collaboration, Communication & Case Analysis", status:"delivered", pay:"paid",    due:"2025-11-20", created:"2025-11-05", priority:"normal", amount:800, files:[{name:"NHS8002_Brief.pdf",kind:"brief"},{name:"NHS8002_Final.docx",kind:"final"}],   notes:"Distinguished grade. Client very pleased.", log:[{on:"2025-11-05",msg:"Order created"},{on:"2025-11-06",msg:"Brief uploaded by client"},{on:"2025-11-13",msg:"Assigned to Alex N."},{on:"2025-11-17",msg:"Final delivered"}] },
+  { id:"MS-042", clientId:"c1", writerId:"w1", school:"Capella University", program:"DNP – Flex Path", course:"NURS-FPX 8010", title:"Policy & Advocacy in DNP Practice",           status:"writing", pay:"partial", due:"2025-12-10", created:"2025-11-22", priority:"normal", amount:800, files:[{name:"8010_Rubric.pdf",kind:"brief"}],                                                  notes:"", log:[{on:"2025-11-22",msg:"Order created"},{on:"2025-11-23",msg:"Brief received"},{on:"2025-11-24",msg:"Writing started"}] },
+  { id:"MS-043", clientId:"c2", writerId:"w2", school:"Capella University", program:"DNP – Flex Path", course:"NHS-FPX 8002", title:"Collaboration, Communication & Case Analysis", status:"review",  pay:"partial", due:"2025-12-08", created:"2025-11-23", priority:"high",   amount:800, files:[{name:"Martha_Brief.pdf",kind:"brief"},{name:"Martha_Draft.docx",kind:"draft"}],       notes:"", log:[{on:"2025-11-23",msg:"Order created"},{on:"2025-11-24",msg:"Brief received"},{on:"2025-11-27",msg:"Draft submitted for review"}] },
+  { id:"MS-044", clientId:"c1", writerId:null,  school:"Capella University", program:"DNP – Flex Path", course:"NURS-FPX 9100", title:"Doctoral Project I – Defining the Project",  status:"new",     pay:"unpaid",  due:"2025-12-20", created:"2025-11-25", priority:"normal", amount:900, files:[],                                                                                       notes:"Awaiting brief and deposit confirmation.", log:[{on:"2025-11-25",msg:"Order created by admin"}] },
+  { id:"MS-045", clientId:"c3", writerId:"w2", school:"Walden University",  program:"MSN – PMHNP",    course:"NURS 6630",     title:"Psychotherapy Across the Lifespan",           status:"brief",   pay:"partial", due:"2025-12-15", created:"2025-11-26", priority:"normal", amount:560, files:[{name:"NURS6630_Brief.pdf",kind:"brief"}],                                              notes:"", log:[{on:"2025-11-26",msg:"Order created"},{on:"2025-11-27",msg:"Brief received from Darius"}] },
+  { id:"MS-046", clientId:"c2", writerId:"w1", school:"Capella University", program:"DNP – Flex Path", course:"NURS-FPX 8030", title:"Evidence-Based Practice & Applied Research",  status:"revision",pay:"partial", due:"2025-12-05", created:"2025-11-18", priority:"urgent", amount:800, files:[{name:"8030_v1.docx",kind:"final"},{name:"Faculty_Notes.pdf",kind:"revision"}],         notes:"Faculty requests more citations in section 3.", log:[{on:"2025-11-18",msg:"Order created"},{on:"2025-11-21",msg:"Writing started"},{on:"2025-11-28",msg:"Delivered"},{on:"2025-11-29",msg:"Revision requested"}] },
 ];
 
 // ── PRICING DATA (calculator only) ────────────────────────────────────────────
@@ -228,7 +228,7 @@ function Btn({ children, variant="accent", onClick, style={}, size="md", disable
   );
 }
 
-function Field({ label, value, onChange, type="text", placeholder="", as="input" }) {
+function Field({ label, value, onChange, type="text", placeholder="", as="input", min="" }) {
   const shared = {
     width:"100%", padding:"9px 13px",
     border:`1.5px solid ${C.border}`, borderRadius:8,
@@ -248,6 +248,7 @@ function Field({ label, value, onChange, type="text", placeholder="", as="input"
             onBlur={e=>e.target.style.borderColor=C.border} />
         : <input value={value} onChange={e=>onChange(e.target.value)}
             type={type} placeholder={placeholder}
+            min={min||undefined}
             style={shared}
             onFocus={e=>e.target.style.borderColor=C.accent}
             onBlur={e=>e.target.style.borderColor=C.border} />
@@ -339,7 +340,7 @@ function Sidebar({ role, view, setView, setRole }) {
         <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:7,
           padding:3, display:"flex", gap:2 }}>
           {["admin","client","writer"].map(r=>(
-            <button key={r} onClick={()=>{ setRole(r); setView("home"); }}
+            <button key={r} onClick={()=>setRole(r)}
               style={{ flex:1, padding:"5px 0", fontSize:10, fontWeight:700,
                 letterSpacing:"0.6px", textTransform:"uppercase", fontFamily:F.body,
                 background: role===r ? C.accent : "transparent",
@@ -762,7 +763,7 @@ function NewOrderModal({ clients, writers, isAdmin, defaultClient, onAdd, onClos
             <>
               <Field label="Course Code"       value={course} onChange={setCourse} placeholder="e.g. NHS-FPX 8002" />
               <Field label="Assignment Title"  value={title}  onChange={setTitle}  placeholder="e.g. Collaboration, Communication & Case Analysis" />
-              <Field label="Due Date"          value={due}    onChange={setDue}    type="date" />
+              <Field label="Due Date"          value={due}    onChange={setDue}    type="date" min={new Date().toISOString().slice(0,10)} />
               <Field label="Notes / Instructions" as="textarea" value={notes} onChange={setNotes} placeholder="Any specific requirements…" />
             </>
           )}
@@ -1121,13 +1122,21 @@ function WritersView({ writers, orders }) {
 }
 
 function BillingView({ orders, clients }) {
+  const totalValue   = orders.reduce((s,o)=>s+(o.amount||0),0);
+  const collected    = orders.reduce((s,o)=>{
+    if(o.pay==="paid")    return s+(o.amount||0);
+    if(o.pay==="partial") return s+Math.round((o.amount||0)*0.5);
+    return s;
+  },0);
+  const outstanding  = totalValue - collected;
+  const fmt = n => "$"+n.toLocaleString();
   return (
     <div style={{ padding:"0 28px 40px" }}>
       <PageHead title="Billing" sub="Payment records across all clients" />
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:28 }}>
-        <Stat label="Total Value"    value="$18,400" note="all orders" />
-        <Stat label="Collected"      value="$12,200" note="deposits + balances" highlight />
-        <Stat label="Outstanding"    value="$6,200"  note="pending collection" />
+        <Stat label="Total Value"    value={fmt(totalValue)} note="all orders" />
+        <Stat label="Collected"      value={fmt(collected)}  note="deposits + balances" highlight />
+        <Stat label="Outstanding"    value={fmt(outstanding)} note="pending collection" />
       </div>
       <div style={{ background:C.surface, border:`1px solid ${C.border}`,
         borderRadius:10, padding:22, boxShadow:"0 1px 4px rgba(28,25,23,0.04)" }}>
@@ -1753,6 +1762,10 @@ export default function OMSApp({ onBack = null }) {
   const [drawer, setDrawer] = useState(null);
   const [modal,  setModal]  = useState(false);
 
+  const [pinModal,     setPinModal]     = useState(false);
+  const [pinVal,       setPinVal]       = useState("");
+  const [pinErr,       setPinErr]       = useState(false);
+
   const currentClient = CLIENTS[0]; // Kelli (demo)
   const currentWriter = WRITERS[0]; // Alex  (demo)
 
@@ -1765,6 +1778,12 @@ export default function OMSApp({ onBack = null }) {
   }
 
   function handleRoleSwitch(r) {
+    if (r === "admin" && role !== "admin") {
+      setPinModal(true);
+      setPinVal("");
+      setPinErr(false);
+      return;
+    }
     setRole(r);
     setView("home");
   }
@@ -1876,6 +1895,75 @@ export default function OMSApp({ onBack = null }) {
         onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.inkMid; }}>
         🧮 <span>Pricing Calculator</span>
       </button>
+
+      {/* Admin PIN gate */}
+      {pinModal && (
+        <>
+          <div onClick={()=>{ setPinModal(false); setPinVal(""); setPinErr(false); }}
+            style={{ position:"fixed", inset:0, background:"rgba(28,25,23,0.55)",
+              zIndex:600, backdropFilter:"blur(4px)" }} />
+          <div style={{ position:"fixed", top:"50%", left:"50%",
+            transform:"translate(-50%,-50%)", width:340,
+            background:C.surface, borderRadius:12, zIndex:601,
+            boxShadow:"0 24px 64px rgba(28,25,23,0.22)", overflow:"hidden" }}>
+            <div style={{ background:C.side, padding:"20px 24px" }}>
+              <div style={{ fontSize:10, color:C.accent, fontFamily:F.body,
+                letterSpacing:"1.8px", textTransform:"uppercase", marginBottom:4 }}>
+                Staff Access
+              </div>
+              <div style={{ fontSize:18, fontWeight:600, fontFamily:F.display,
+                color:"#FAFAF9" }}>Enter your PIN</div>
+            </div>
+            <div style={{ padding:24 }}>
+              <div style={{ fontSize:12, color:C.inkMid, fontFamily:F.body, marginBottom:16 }}>
+                Admin access is restricted. Enter the staff PIN to continue.
+              </div>
+              <input
+                type="password"
+                value={pinVal}
+                onChange={e=>{ setPinVal(e.target.value); setPinErr(false); }}
+                onKeyDown={e=>{
+                  if(e.key==="Enter") {
+                    if(pinVal==="1234") {
+                      setRole("admin"); setView("home");
+                      setPinModal(false); setPinVal(""); setPinErr(false);
+                    } else { setPinErr(true); setPinVal(""); }
+                  }
+                }}
+                placeholder="••••"
+                autoFocus
+                style={{ width:"100%", padding:"10px 14px", border:`1.5px solid ${pinErr?C.accent:C.border}`,
+                  borderRadius:8, fontSize:18, letterSpacing:"6px", textAlign:"center",
+                  fontFamily:F.mono, outline:"none", boxSizing:"border-box",
+                  color:C.ink, background:C.surface }}
+              />
+              {pinErr && (
+                <div style={{ fontSize:12, color:C.accent, fontFamily:F.body,
+                  marginTop:8, textAlign:"center" }}>
+                  Incorrect PIN. Please try again.
+                </div>
+              )}
+              <div style={{ display:"flex", gap:10, marginTop:18, justifyContent:"flex-end" }}>
+                <Btn variant="ghost" onClick={()=>{ setPinModal(false); setPinVal(""); setPinErr(false); }}>
+                  Cancel
+                </Btn>
+                <Btn onClick={()=>{
+                  if(pinVal==="1234") {
+                    setRole("admin"); setView("home");
+                    setPinModal(false); setPinVal(""); setPinErr(false);
+                  } else { setPinErr(true); setPinVal(""); }
+                }}>
+                  Confirm
+                </Btn>
+              </div>
+              <div style={{ marginTop:14, fontSize:11, color:C.inkLight,
+                textAlign:"center", fontFamily:F.body }}>
+                Demo PIN: 1234
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
