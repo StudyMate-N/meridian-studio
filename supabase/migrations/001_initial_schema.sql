@@ -177,14 +177,14 @@ create trigger on_auth_user_created
 create or replace function public.generate_order_ref()
 returns text language plpgsql as $$
 declare
-  ref text;
-  exists boolean;
+  v_ref    text;
+  v_exists boolean;
 begin
   loop
-    ref := 'MS-' || lpad(floor(random() * 99999)::text, 5, '0');
-    select count(*) > 0 into exists from public.orders where orders.ref = ref;
-    exit when not exists;
+    v_ref := 'MS-' || lpad(floor(random() * 99999)::text, 5, '0');
+    select count(*) > 0 into v_exists from public.orders where orders.ref = v_ref;
+    exit when not v_exists;
   end loop;
-  return ref;
+  return v_ref;
 end;
 $$;
