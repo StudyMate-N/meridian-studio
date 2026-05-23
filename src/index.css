@@ -1,0 +1,23 @@
+/* ── Meridian Studio — Global Base Styles ────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Inherit font from React components for all form elements */
+button       { font-family: inherit; }
+input        { font-family: inherit; }
+select       { font-family: inherit; }
+textarea     { font-family: inherit; }
+
+/* Subtle custom scrollbar */
+::-webkit-scrollbar            { width: 5px; height: 5px; }
+::-webkit-scrollbar-track      { background: transparent; }
+::-webkit-scrollbar-thumb      { background: #D4D0CA; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover{ background: #A8A29E; }
