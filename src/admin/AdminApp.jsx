@@ -11,26 +11,46 @@ export default function AdminApp() {
   const [err,   setErr]   = useState('')
 
   useEffect(() => {
-    checkSession()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => checkSession())
+    // Safety timeout: if checkSession hangs for any reason, fall through to sign-in
+    const timeout = setTimeout(() => setState(s => s === 'loading' ? 'signin' : s), 5000)
+
+    checkSession().finally(() => clearTimeout(timeout))
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, session) => {
+      if (session) checkSession()
+      else setState('signin')
+    })
     return () => subscription.unsubscribe()
   }, [])
 
   async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setState('signin'); return }
+    try {
+      const { data: { session }, error: sessErr } = await supabase.auth.getSession()
+      if (sessErr) throw sessErr
+      if (!session) { setState('signin'); return }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, name, email')
-      .eq('id', session.user.id)
-      .single()
+      const { data: profile, error: profErr } = await supabase
+        .from('profiles')
+        .select('role, name, email')
+        .eq('id', session.user.id)
+        .single()
 
-    if (profile?.role === 'admin') {
-      setUser({ ...session.user, ...profile })
-      setState('ready')
-    } else {
-      setState('denied')
+      if (profErr) {
+        // Profile not found or RLS blocked — treat as not-admin
+        console.warn('Profile fetch error:', profErr.message)
+        setState('denied')
+        return
+      }
+
+      if (profile?.role === 'admin') {
+        setUser({ ...session.user, ...profile })
+        setState('ready')
+      } else {
+        setState('denied')
+      }
+    } catch (e) {
+      console.error('checkSession failed:', e)
+      setState('signin') // fail open to sign-in form, never stuck loading
     }
   }
 
