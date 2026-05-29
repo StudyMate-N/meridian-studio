@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './lib/supabase.js'
+import Concierge from './Concierge.jsx'
 import './portal.css'
 
 const WA_NUM = import.meta.env.VITE_WHATSAPP_NUMBER || '12057279363'
@@ -473,39 +474,107 @@ function MyOrders({ user, profile, orders, loading, onOpen, onOpenFull }) {
   )
 }
 
+// ── FILE HELPERS ──────────────────────────────────────────────────────────────
+const FILE_TONE = { rubric: 'tone-violet', brief: 'tone-info', draft: 'tone-warn', final: 'tone-good', revision: 'tone-bad', other: 'tone-mute' }
+function fmtBytes(n) {
+  if (!n) return '—'
+  if (n < 1024) return n + ' B'
+  if (n < 1048576) return Math.round(n / 1024) + ' KB'
+  return (n / 1048576).toFixed(1) + ' MB'
+}
+
 // ── ORDER DETAIL ──────────────────────────────────────────────────────────────
 function OrderDetail({ o, user, profile, onBack }) {
   const [tab, setTab] = useState('chat')
   const [draft, setDraft] = useState('')
   const [thread, setThread] = useState([])
+  const [msgsLoading, setMsgsLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [files, setFiles] = useState([])
+  const [log, setLog] = useState([])
+  const [uploading, setUploading] = useState(false)
   const endRef = useRef(null)
+  const fileRef = useRef(null)
   const title = o.title || o.program || o.scope_label || 'Order'
 
+  function mapMsg(r) {
+    return {
+      id: r.id,
+      from: r.sender_id && r.sender_id === user.id ? 'me' : 'them',
+      name: r.sender_name || o.writer?.name || 'Meridian',
+      body: r.body,
+      time: new Date(r.created_at),
+    }
+  }
+
+  // Load messages + realtime subscribe
   useEffect(() => {
-    setThread([
-      { from: 'sys', body: `Brief received — order ${o.ref} created.`, time: new Date(o.created_at || o.created) },
-      ...(o.status !== 'new' && o.writer?.name ? [
-        { from: 'them', name: o.writer.name, body: "Hi — I'll be supporting this one. I've read your brief and the scope looks clear. Any specific requirements I should know about?", time: new Date() },
-      ] : []),
-    ])
-    setTab('chat')
-    setDraft('')
-  }, [o])
+    let active = true
+    setTab('chat'); setDraft(''); setMsgsLoading(true)
+    supabase.from('order_messages').select('*').eq('order_id', o.id).eq('is_internal', false)
+      .order('created_at', { ascending: true })
+      .then(({ data }) => { if (active) { setThread((data || []).map(mapMsg)); setMsgsLoading(false) } })
+
+    const ch = supabase.channel(`order-${o.id}-msgs`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_messages', filter: `order_id=eq.${o.id}` },
+        payload => {
+          if (payload.new.is_internal) return
+          setThread(t => t.some(m => m.id === payload.new.id) ? t : [...t, mapMsg(payload.new)])
+        })
+      .subscribe()
+    return () => { active = false; supabase.removeChannel(ch) }
+  }, [o.id])
+
+  // Load files + timeline log
+  useEffect(() => {
+    let active = true
+    supabase.from('order_files').select('*').eq('order_id', o.id).order('created_at', { ascending: true })
+      .then(({ data }) => { if (active) setFiles(data || []) })
+    supabase.from('order_log').select('*').eq('order_id', o.id).order('created_at', { ascending: true })
+      .then(({ data }) => { if (active) setLog(data || []) })
+    return () => { active = false }
+  }, [o.id])
 
   useEffect(() => { endRef.current?.parentElement?.scrollTo?.(0, 1e6) }, [thread, tab])
 
-  function send(e) {
+  async function send(e) {
     e.preventDefault()
-    const b = draft.trim(); if (!b) return
-    setThread(t => [...t, { from: 'me', body: b, time: new Date() }])
-    setDraft('')
+    const b = draft.trim(); if (!b || sending) return
+    setSending(true); setDraft('')
+    const { data, error } = await supabase.from('order_messages').insert({
+      order_id: o.id,
+      sender_id: user.id,
+      sender_name: profile?.name || user.email,
+      body: b,
+      is_internal: false,
+    }).select().single()
+    setSending(false)
+    if (error) { setDraft(b); console.error(error); return }
+    if (data) setThread(t => t.some(m => m.id === data.id) ? t : [...t, mapMsg(data)])
+  }
+
+  async function downloadFile(f) {
+    const { data, error } = await supabase.storage.from('order-files').createSignedUrl(f.file_path, 120)
+    if (error || !data?.signedUrl) { console.error(error); return }
+    window.open(data.signedUrl, '_blank', 'noopener')
+  }
+
+  async function onUpload(file) {
+    if (!file || uploading) return
+    setUploading(true)
+    const path = `${o.id}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g, '_')}`
+    const { error: upErr } = await supabase.storage.from('order-files').upload(path, file)
+    if (upErr) { setUploading(false); console.error(upErr); return }
+    const { data } = await supabase.from('order_files').insert({
+      order_id: o.id, uploaded_by: user.id, file_name: file.name, file_path: path, kind: 'other', size_bytes: file.size,
+    }).select().single()
+    if (data) setFiles(f => [...f, data])
+    setUploading(false)
   }
 
   const userInitials = profile?.name ? initials(profile.name) : (user?.email?.[0] || '?').toUpperCase()
-  const curIdx = STATUS_FLOW.indexOf(o.status)
-  const est = o.estimate_usd || 0
-  const dep = o.deposit_usd || 0
-  const balance = est - dep
+  const curIdx = o.status === 'revision' ? STATUS_FLOW.indexOf('in_review')
+    : o.status === 'closed' ? STATUS_FLOW.length - 1 : STATUS_FLOW.indexOf(o.status)
 
   return (
     <main className="pwrap">
@@ -534,6 +603,9 @@ function OrderDetail({ o, user, profile, onBack }) {
             <button role="tab" className={'tab' + (tab === 'chat' ? ' on' : '')} onClick={() => setTab('chat')}>
               {PIco.msg()} Conversation
             </button>
+            <button role="tab" className={'tab' + (tab === 'files' ? ' on' : '')} onClick={() => setTab('files')}>
+              {PIco.file()} Files {files.length > 0 && <span className="ct">{files.length}</span>}
+            </button>
             <button role="tab" className={'tab' + (tab === 'brief' ? ' on' : '')} onClick={() => setTab('brief')}>
               {PIco.doc({ width: 16, height: 16 })} Brief
             </button>
@@ -542,14 +614,15 @@ function OrderDetail({ o, user, profile, onBack }) {
           {tab === 'chat' && (
             <div>
               <div className="thread scrollbar" style={{ maxHeight: 480, overflowY: 'auto' }}>
-                {thread.map((m, i) => m.from === 'sys' ? (
-                  <div className="msg sys" key={i}>
-                    <span className="s-pill">{m.body}</span>
-                  </div>
-                ) : (
-                  <div className={'msg ' + (m.from === 'me' ? 'me' : 'them')} key={i}>
+                <div className="msg sys"><span className="s-pill">Brief received — order {o.ref} created.</span></div>
+                {msgsLoading ? (
+                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 12 }}>Loading conversation…</div>
+                ) : thread.length === 0 ? (
+                  <div className="msg sys"><span className="s-pill">{o.writer?.name ? `${o.writer.name} will message you here.` : "We're matching you with a specialist — they'll introduce themselves here."}</span></div>
+                ) : thread.map(m => (
+                  <div className={'msg ' + (m.from === 'me' ? 'me' : 'them')} key={m.id}>
                     <span className={'avatar m-av ' + (m.from === 'me' ? '' : 'accent')}>
-                      {m.from === 'me' ? userInitials : (o.writer?.name ? initials(o.writer.name) : 'M')}
+                      {m.from === 'me' ? userInitials : initials(m.name)}
                     </span>
                     <div className="m-body">
                       <div className="m-meta">
@@ -569,8 +642,36 @@ function OrderDetail({ o, user, profile, onBack }) {
                   onChange={e => setDraft(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) send(e) }}
                 />
-                <button type="submit" className="btn btn-accent btn-lg" disabled={!draft.trim()}>{PIco.arrow()}</button>
+                <button type="submit" className="btn btn-accent btn-lg" disabled={!draft.trim() || sending}>{PIco.arrow()}</button>
               </form>
+            </div>
+          )}
+
+          {tab === 'files' && (
+            <div>
+              {files.length === 0 ? (
+                <div style={{ padding: '20px 4px', color: 'var(--muted)', fontSize: 13.5, fontFamily: 'var(--serif)', fontStyle: 'italic' }}>
+                  No files yet. Share your rubric or any reference material with your expert below.
+                </div>
+              ) : files.map(f => (
+                <div className="frow" key={f.id}>
+                  <span className="fic">{PIco.file({ width: 20, height: 20 })}</span>
+                  <span className="fmeta">
+                    <span className="fn">{f.file_name}</span>
+                    <span className="fs">
+                      <span className={'badge ' + (FILE_TONE[f.kind] || 'tone-mute')} style={{ padding: '1px 8px', fontSize: 11 }}>{f.kind}</span>
+                      <span className="d"></span>{fmtBytes(f.size_bytes)}
+                      <span className="d"></span>{f.uploaded_by === user.id ? 'Uploaded by you' : 'From your expert'}
+                      <span className="d"></span>{fmtShort(f.created_at)}
+                    </span>
+                  </span>
+                  <button className="btn btn-sm btn-ghost" onClick={() => downloadFile(f)}>Download</button>
+                </div>
+              ))}
+              <input ref={fileRef} type="file" hidden onChange={e => { onUpload(e.target.files[0]); e.target.value = '' }} />
+              <div className="updrop" onClick={() => !uploading && fileRef.current?.click()}>
+                {PIco.file()} &nbsp;{uploading ? 'Uploading…' : 'Share a file with your expert — click to upload'}
+              </div>
             </div>
           )}
 
@@ -579,7 +680,7 @@ function OrderDetail({ o, user, profile, onBack }) {
               <div className="kv">
                 <div className="row"><span className="k">Program</span><span className="v">{o.program || '—'}</span></div>
                 <div className="row"><span className="k">Academic level</span><span className="v">{o.level_label || o.level || '—'}</span></div>
-                <div className="row"><span className="k">Scope</span><span className="v">{o.scope_label || o.scope || '—'}</span></div>
+                <div className="row"><span className="k">Scope</span><span className="v">{o.scope_label || o.scope_id || '—'}</span></div>
                 <div className="row"><span className="k">Due date</span><span className="v">{fmtD(o.due_date || o.due)}</span></div>
                 {o.notes && <div className="row"><span className="k">Notes</span><span className="v" style={{ maxWidth: 300, textAlign: 'right' }}>{o.notes}</span></div>}
               </div>
@@ -595,7 +696,15 @@ function OrderDetail({ o, user, profile, onBack }) {
           <div className="side-card">
             <div className="sc-h">Order timeline</div>
             <div className="timeline">
-              {STATUS_FLOW.map((s, i) => {
+              {log.length > 0 ? log.map((e, i) => (
+                <div className={'tl ' + (i === log.length - 1 ? 'cur' : 'done')} key={e.id}>
+                  <div className="rail"><span className="dot"></span><span className="line"></span></div>
+                  <div className="tl-b">
+                    <div className="tl-t">{e.event}</div>
+                    <div className="tl-d">{fmtShort(e.created_at)}</div>
+                  </div>
+                </div>
+              )) : STATUS_FLOW.map((s, i) => {
                 const cls = i < curIdx ? 'done' : i === curIdx ? 'cur' : 'pending'
                 return (
                   <div className={'tl ' + cls} key={s}>
@@ -614,17 +723,10 @@ function OrderDetail({ o, user, profile, onBack }) {
               <div className="sc-h">Your expert</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
                 <span className="avatar accent" style={{ width: 48, height: 48, fontSize: 19 }}>{initials(o.writer.name)}</span>
-                <div><div style={{ fontWeight: 700, fontSize: 15 }}>{o.writer.name}</div></div>
-              </div>
-            </div>
-          )}
-          {est > 0 && (
-            <div className="side-card">
-              <div className="sc-h">Payment · 50 / 50</div>
-              <div className="kv">
-                <div className="row"><span className="k">Estimate</span><span className="v mono">{fmtMoney(est)}</span></div>
-                <div className="row"><span className="k">Deposit</span><span className="v mono">{fmtMoney(dep)}</span></div>
-                <div className="row"><span className="k">Balance</span><span className="v mono">{fmtMoney(balance)}</span></div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>{o.writer.name}</div>
+                  {o.writer.specialty && <div style={{ color: 'var(--muted)', fontSize: 13 }}>{o.writer.specialty}</div>}
+                </div>
               </div>
             </div>
           )}
@@ -761,17 +863,20 @@ export default function PortalApp() {
     if (!user) { setProfile(null); setOrders([]); return }
     supabase.from('profiles').select('*').eq('id', user.id).single()
       .then(({ data }) => setProfile(data))
-    loadOrders()
+    // Link any guest orders placed with this email, then load.
+    supabase.rpc('claim_my_orders').then(() => loadOrders()).catch(() => loadOrders())
   }, [user])
 
   async function loadOrders() {
     if (!user) return
     setOrdersLoading(true)
-    const { data } = await supabase
+    // RLS returns only orders where client_id = auth.uid(); claim_my_orders()
+    // links guest orders by email first so messages/files/log become readable.
+    const { data, error } = await supabase
       .from('orders')
-      .select('id, ref, program, scope_label, level_label, client_name, client_email, due_date, status, payment_status, created_at, estimate_usd, deposit_usd, writer_id, notes, writer:writers(id, name)')
-      .eq('client_email', user.email)
+      .select('id, ref, program, scope_id, scope_label, level, level_label, has_project, is_bundle, rate_writing, rate_project, priority, client_name, client_email, due_date, status, payment_status, created_at, writer_id, notes, writer:writers(id, name, specialty)')
       .order('created_at', { ascending: false })
+    if (error) console.error('loadOrders', error)
     setOrders(data || [])
     setOrdersLoading(false)
   }
@@ -827,6 +932,8 @@ export default function PortalApp() {
           <span className="tk">{PIco.arrow({ width: 15, height: 15 })}</span>{toast}
         </div>
       )}
+
+      <Concierge />
     </div>
   )
 }
