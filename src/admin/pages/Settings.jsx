@@ -143,7 +143,7 @@ export default function Settings() {
             },
             {
               label: 'Live URL',
-              value: 'https://meridian-studio-ten.vercel.app',
+              value: 'https://primemeridian.academy',
               mono: true,
             },
           ].map(row => (

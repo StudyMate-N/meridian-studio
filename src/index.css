@@ -21,3 +21,39 @@ textarea     { font-family: inherit; }
 ::-webkit-scrollbar-track      { background: transparent; }
 ::-webkit-scrollbar-thumb      { background: #D4D0CA; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover{ background: #A8A29E; }
+
+/* ── Accessibility ──────────────────────────────────────────────────── */
+
+/* Skip-to-content link — visually hidden until focused */
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 9999;
+  background: #111418; color: #fff; padding: 12px 20px;
+  border-radius: 0 0 8px 0; font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14px; font-weight: 500; text-decoration: none;
+}
+.skip-link:focus {
+  left: 0; outline: 2px solid #8B1A1F; outline-offset: 2px;
+}
+
+/* Visible focus ring for keyboard users only (not mouse clicks) */
+*:focus-visible {
+  outline: 2px solid #8B1A1F;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+/* On dark backgrounds the maroon ring has poor contrast — use a light ring.
+   .ws-dark marks the workspace sidebar (inline-styled, dark #111418). */
+.ws-dark *:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
