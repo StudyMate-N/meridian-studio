@@ -1,27 +1,27 @@
-// ── Design Tokens ────────────────────────────────────────────────────────────
+// ── Design Tokens (Clay design system) ───────────────────────────────────────
 export const T = {
-  bg:        '#F7F6F3',
-  surface:   '#FFFFFF',
-  alt:       '#F2F1EE',
-  border:    '#E8E5E0',
-  borderMid: '#D4D0CA',
-  side:      '#111418',
-  sideBorder:'rgba(255,255,255,0.07)',
-  sideText:  'rgba(255,255,255,0.5)',
-  ink:       '#111418',
-  inkMid:    '#57534E',
-  inkLight:  '#A8A29E',
-  accent:    '#B91C1C',
-  accentSoft:'#FEF2F2',
-  green:     '#065F46',
-  greenBg:   '#ECFDF5',
-  greenBord: '#A7F3D0',
+  bg:        '#F4F1EA',  // paper-2 canvas
+  surface:   '#FBFAF7',  // paper — cards
+  alt:       '#EDE8DD',  // paper-3
+  border:    '#E4DCCF',  // line
+  borderMid: '#D6CCBC',  // line-2
+  side:      '#211A14',  // ink sidebar
+  sideBorder:'rgba(246,241,233,0.10)',
+  sideText:  'rgba(246,241,233,0.58)',
+  ink:       '#211A14',
+  inkMid:    '#6E6357',  // muted
+  inkLight:  '#938878',  // muted-2
+  accent:    '#BD5A33',  // terracotta
+  accentSoft:'#FBF1EA',
+  green:     '#3F6B4E',
+  greenBg:   '#EAF2EC',
+  greenBord: '#BBD9C5',
 };
 
 export const F = {
-  serif: 'Cormorant Garamond, Georgia, serif',
-  sans:  'DM Sans, system-ui, sans-serif',
-  mono:  'DM Mono, monospace',
+  serif: 'Newsreader, Georgia, serif',
+  sans:  'Hanken Grotesk, system-ui, sans-serif',
+  mono:  'Spline Sans Mono, monospace',
 };
 
 // ── Status Configs ────────────────────────────────────────────────────────────
