@@ -43,11 +43,22 @@ export default function Writers({ writers, refetch }) {
   async function addWriter() {
     if (!form.name.trim() || !form.email.trim()) return
     setSaving(true)
-    const { error } = await supabase.from('writers').insert({
-      name: form.name.trim(), email: form.email.trim().toLowerCase(),
+    const email = form.email.trim().toLowerCase()
+    const { data: created, error } = await supabase.from('writers').insert({
+      name: form.name.trim(), email,
       specialty: form.specialty.trim() || null, active: true,
-    })
-    if (!error) { setForm({ name:'', email:'', specialty:'' }); setShowForm(false); refetch() }
+    }).select().single()
+    if (!error) {
+      // If this expert has already signed in, link their profile now so they
+      // get the writer role and /expert works immediately. New sign-ins are
+      // linked automatically by the on_profile_link_writer trigger.
+      const { data: prof } = await supabase.from('profiles').select('id').ilike('email', email).maybeSingle()
+      if (prof && created) {
+        await supabase.from('writers').update({ profile_id: prof.id }).eq('id', created.id)
+        await supabase.from('profiles').update({ role: 'writer' }).eq('id', prof.id)
+      }
+      setForm({ name:'', email:'', specialty:'' }); setShowForm(false); refetch()
+    }
     else console.error('Add writer error:', error)
     setSaving(false)
   }
