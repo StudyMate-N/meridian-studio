@@ -801,6 +801,7 @@ function Footer({ onBrief }) {
               <li><a href="/workspace">Sign in</a></li>
               <li><a href="/workspace">My orders</a></li>
               <li><button className="foot-brief-link" onClick={() => onBrief()}>Start a brief</button></li>
+              <li><a href="/expert">Expert login</a></li>
             </ul>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import HomePage  from './HomePage'
 import PortalApp from './PortalApp.jsx'
+import WriterApp from './WriterApp.jsx'
 
 export default function App() {
   return (
@@ -8,6 +9,7 @@ export default function App() {
       <Routes>
         <Route path="/"          element={<HomePage />} />
         <Route path="/workspace" element={<PortalApp />} />
+        <Route path="/expert"    element={<WriterApp />} />
         <Route path="/catalog"   element={<Navigate to="/" replace />} />
         <Route path="*"          element={<HomePage />} />
       </Routes>
