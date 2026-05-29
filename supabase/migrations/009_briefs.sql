@@ -13,6 +13,7 @@ create table public.briefs (
   name         text,
   whatsapp     text,
   notes        text,
+  rubric_text  text,
   status       text default 'new',
   created_at   timestamptz default now()
 );

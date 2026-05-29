@@ -5,6 +5,34 @@ import './HomePage.css'
 
 const WA_NUM = import.meta.env.VITE_WHATSAPP_NUMBER || '12057279363'
 
+// AI intake — proxied through the `concierge` Supabase Edge Function so the
+// Anthropic key stays server-side.
+const FN_URL = (import.meta.env.VITE_SUPABASE_URL || '') + '/functions/v1/concierge'
+const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+async function callAI(prompt) {
+  const res = await fetch(FN_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', Authorization: `Bearer ${ANON}`, apikey: ANON },
+    body: JSON.stringify({ prompt }),
+  })
+  if (!res.ok) throw new Error('ai_http_' + res.status)
+  const data = await res.json()
+  const text = (data && data.text || '').trim()
+  if (!text) throw new Error('ai_empty')
+  return text
+}
+
+const SAMPLE_RUBRIC = `NURS 8302 — DNP Capstone Project Proposal
+Walden University · Doctor of Nursing Practice
+
+Assignment: Develop a 12–15 page evidence-based practice proposal addressing a
+clinical problem in a behavioral-health setting. Include: problem statement, PICOT
+question, literature synthesis (minimum 10 peer-reviewed sources, last 5 years),
+proposed intervention, and an evaluation plan.
+
+Format: APA 7th edition, double-spaced, level-1 and level-2 headings required.
+Due: in 6 days (Sunday 11:59 PM). Submit via Turnitin (similarity must be <15%).`
+
 // ── ICONS ─────────────────────────────────────────────────────────────────────
 const Ico = {
   arrow:   (p) => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M5 12h14M13 5l7 7-7 7"/></svg>,
@@ -18,6 +46,7 @@ const Ico = {
   seal:    (p) => <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M12 2l2.4 1.8 3-.2 1 2.8 2.4 1.7-.9 2.9.9 2.9-2.4 1.7-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3.2 16l.9-2.9-.9-2.9 2.4-1.7 1-2.8 3 .2z"/><polyline points="9 12 11 14 15 10"/></svg>,
   wa:      (p) => <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" focusable="false" {...p}><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1c-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.7-1-2.3c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.5.3-.7.3-1.4.2-1.5-.1-.1-.3-.2-.6-.3M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.4.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2"/></svg>,
   spark:   (p) => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M12 3v3M12 18v3M5 12H2M22 12h-3M6.3 6.3 4.5 4.5M19.5 19.5l-1.8-1.8M6.3 17.7 4.5 19.5M19.5 4.5l-1.8 1.8"/><circle cx="12" cy="12" r="3.2"/></svg>,
+  upload:  (p) => <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M12 16V4M7 9l5-5 5 5"/></svg>,
 }
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
@@ -818,10 +847,14 @@ function Footer({ onBrief }) {
 
 // ── BRIEF FLOW MODAL ──────────────────────────────────────────────────────────
 function BriefFlow({ open, onClose, prefill }) {
-  const [step, setStep] = useState('input')
+  const [step, setStep] = useState('input')   // input | parsing | review | done
   const [raw, setRaw] = useState('')
   const [err, setErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [fileName, setFileName] = useState('')
+  const [aiNote, setAiNote] = useState('')
+  const [extracting, setExtracting] = useState(false)
+  const fileRef = useRef(null)
 
   const [f, setF] = useState({
     title: '', discipline: 'Nursing & Health Sciences', level: 'dnp', scope: 'cap',
@@ -840,7 +873,7 @@ function BriefFlow({ open, onClose, prefill }) {
         deadline: prefill.dlId || p.deadline,
       }))
     }
-    if (open) { setStep('input'); setErr('') }
+    if (open) { setStep('input'); setErr(''); setFileName(''); setAiNote(''); setExtracting(false) }
   }, [open])
 
   useEffect(() => { document.body.style.overflow = open ? 'hidden' : '' }, [open])
@@ -857,7 +890,78 @@ function BriefFlow({ open, onClose, prefill }) {
   const rate  = (scope.proj && level.proj != null) ? level.proj : level.rate
   const total = rate * f.pages * dl.mult * (1 - scope.bundle / 100)
 
-  function goReview() { setErr(''); setStep('review') }
+  function manual() { setAiNote(''); setErr(''); setStep('review') }
+
+  function readFile(file) {
+    if (!file) return
+    setFileName(file.name); setErr(''); setAiNote('')
+    const name = file.name.toLowerCase()
+    const finish = (txt, note) => { setRaw((txt || '').trim()); setExtracting(false); if (note) setAiNote(note) }
+    ;(async () => {
+      try {
+        if (window.pdfjsLib?.GlobalWorkerOptions && !window.pdfjsLib.GlobalWorkerOptions.workerSrc)
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+        if (name.endsWith('.pdf') && window.pdfjsLib) {
+          setExtracting(true)
+          const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise
+          let txt = ''
+          for (let i = 1; i <= pdf.numPages; i++) { const pg = await pdf.getPage(i); const c = await pg.getTextContent(); txt += c.items.map(s => s.str).join(' ') + '\n' }
+          finish(txt, 'Pulled the text from your PDF — read it with AI, or tidy it below first.')
+        } else if (name.endsWith('.docx') && window.mammoth) {
+          setExtracting(true)
+          const res = await window.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })
+          finish(res.value, 'Pulled the text from your document — read it with AI, or tidy it below first.')
+        } else if (/\.(txt|md|csv|rtf)$/i.test(name) || (file.type && file.type.startsWith('text'))) {
+          const r = new FileReader(); r.onload = () => finish(String(r.result || '')); r.readAsText(file)
+        } else {
+          setExtracting(false)
+          setAiNote("We've got your file. Paste the key details below too, or we'll read it when your brief arrives.")
+        }
+      } catch (e) {
+        setExtracting(false)
+        setAiNote("Couldn't read that file automatically — paste the text below and we'll take it from there.")
+      }
+    })()
+  }
+
+  async function runAI() {
+    if (!raw.trim()) { setErr('Paste your rubric or assignment prompt first — or try the sample.'); return }
+    setErr(''); setStep('parsing')
+    const prompt = `You are the intake assistant for Meridian Studio, an academic support service. Read the assignment brief below and return ONLY a JSON object (no prose, no markdown fences) with these keys:
+"title": short descriptive title (max 8 words),
+"discipline": one of ${JSON.stringify(DISCIPLINES)} — closest match,
+"level": one of "ug","ms","adv","dnp","phd",
+"scope": one of "one","course","term","cap","diss","prog",
+"pages": integer page estimate (convert ~275 words = 1 page if only word count given; if a range, use the midpoint; else null),
+"citation": one of "APA 7","MLA 9","Chicago","Harvard","Other / not sure",
+"deadline": "rush" if due within 2 days, "standard" if within 3-9 days, "relaxed" if 10+ days or unstated,
+"requirements": array of up to 4 short strings capturing the most important instructions.
+
+BRIEF:
+"""${raw.slice(0, 6000)}"""`
+    try {
+      const res = await callAI(prompt)
+      const j = JSON.parse(res.slice(res.indexOf('{'), res.lastIndexOf('}') + 1))
+      const lv = LEVELS.find(l => l.id === j.level) ? j.level : f.level
+      const sc = SCOPES.find(s => s.id === j.scope) ? j.scope : f.scope
+      const dd = DEADLINES.find(d => d.id === j.deadline) ? j.deadline : f.deadline
+      const disc = DISCIPLINES.includes(j.discipline) ? j.discipline : f.discipline
+      const cit = CITATIONS.includes(j.citation) ? j.citation : f.citation
+      const scObj = SCOPES.find(s => s.id === sc)
+      let pages = Number.isFinite(j.pages) && j.pages > 0 ? Math.round(j.pages) : scObj.def
+      pages = Math.max(scObj.lo, Math.min(Math.round(scObj.hi * 1.5), pages))
+      setF(p => ({
+        ...p, title: j.title || p.title, discipline: disc, level: lv, scope: sc,
+        pages, citation: cit, deadline: dd,
+        requirements: Array.isArray(j.requirements) ? j.requirements.join('\n') : p.requirements,
+      }))
+      setAiNote('Read from your brief by our intake AI — please double-check each field.')
+      setStep('review')
+    } catch (e) {
+      setAiNote("We couldn't auto-read that one — no problem. Fill in the essentials below and we'll take it from there.")
+      setStep('review')
+    }
+  }
 
   async function submitBrief(e) {
     e.preventDefault()
@@ -880,6 +984,7 @@ function BriefFlow({ open, onClose, prefill }) {
       name: f.name.trim(),
       whatsapp: f.whatsapp.trim(),
       notes: f.notes || null,
+      rubric_text: raw || null,
     })
     setSubmitting(false)
     if (error) { setErr('Submission failed — please try again.'); console.error(error) }
@@ -891,7 +996,7 @@ function BriefFlow({ open, onClose, prefill }) {
   )
 
   if (!open) return null
-  const stepN = step === 'input' ? 1 : step === 'review' ? 2 : 3
+  const stepN = step === 'input' || step === 'parsing' ? 1 : step === 'review' ? 2 : 3
 
   return (
     <div className="bf-overlay" role="dialog" aria-modal="true" aria-label="Start your brief"
@@ -911,18 +1016,39 @@ function BriefFlow({ open, onClose, prefill }) {
         {/* STEP 1 — INPUT */}
         {step === 'input' && (
           <div className="bf-body">
-            <div className="bf-kick">{Ico.spark()} Brief intake</div>
-            <h3 className="bf-h">Paste your rubric.<br />We'll <span className="italic">build the brief.</span></h3>
-            <p className="bf-sub">Paste your assignment prompt or rubric below. We'll pre-fill the key details and you can adjust anything before it's sent.</p>
-            <textarea className="bf-ta" placeholder="Paste your rubric or assignment prompt here…" value={raw} onChange={e => setRaw(e.target.value)} />
+            <div className="bf-kick">{Ico.spark()} AI-assisted intake</div>
+            <h3 className="bf-h">Drop your rubric.<br />We'll <span className="italic">build the brief.</span></h3>
+            <p className="bf-sub">Paste your assignment prompt or rubric and our intake reads the level, scope, deadline, page count and citation style for you. Takes about thirty seconds — and you can fix anything before it's sent.</p>
+
+            <div className="bf-drop" onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('over') }}
+              onDragLeave={e => e.currentTarget.classList.remove('over')}
+              onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('over'); readFile(e.dataTransfer.files[0]) }}>
+              <span className="bf-drop-ic">{extracting ? <span className="bf-mini-spin"></span> : Ico.upload()}</span>
+              <span className="bf-drop-t">{extracting ? 'Reading your file…' : (fileName || 'Drop a file or click to upload')}</span>
+              <span className="bf-drop-s">PDF, DOCX, or TXT · we read it for you</span>
+              <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt,.md,.rtf" hidden onChange={e => readFile(e.target.files[0])} />
+            </div>
+
+            <textarea className="bf-ta" placeholder="…or paste your rubric / assignment prompt here" value={raw} onChange={e => setRaw(e.target.value)} />
+            <div className="bf-inline">
+              <button className="bf-link" onClick={() => { setRaw(SAMPLE_RUBRIC); setFileName('') }}>Try a sample rubric</button>
+              <button className="bf-link" onClick={manual}>Skip — fill in manually</button>
+            </div>
             {err && <div className="bf-err" role="alert">{err}</div>}
             <div className="bf-actions">
-              <button className="btn btn-accent btn-lg" onClick={goReview}>Continue to review {Ico.arrow()}</button>
+              <button className="btn btn-accent btn-lg" onClick={runAI}>{Ico.spark()} Read my brief with AI</button>
             </div>
-            <div className="bf-inline">
-              <button className="bf-link" onClick={goReview}>Skip — fill in manually</button>
-            </div>
-            <p className="bf-fine">Your brief is private and used only to scope your work. We screen every deliverable for originality.</p>
+            <p className="bf-fine">Your file is private and used only to scope your work. We screen every deliverable for originality.</p>
+          </div>
+        )}
+
+        {/* PARSING */}
+        {step === 'parsing' && (
+          <div className="bf-body bf-parsing">
+            <div className="bf-spin" aria-hidden="true"></div>
+            <h3 className="bf-h" style={{ textAlign: 'center' }}>Reading your brief…</h3>
+            <p className="bf-sub" style={{ textAlign: 'center' }}>Pulling out your level, scope, deadline, and requirements.</p>
           </div>
         )}
 
@@ -930,7 +1056,7 @@ function BriefFlow({ open, onClose, prefill }) {
         {step === 'review' && (
           <form className="bf-body bf-review" onSubmit={submitBrief}>
             <h3 className="bf-h">Check your <span className="italic">brief.</span></h3>
-            {raw && <div className="bf-note">{Ico.spark()}<span>Review and adjust the fields below before we send your brief.</span></div>}
+            {aiNote && <div className="bf-note">{Ico.spark()}<span>{aiNote}</span></div>}
             <div className="bf-grid">
               <div className="bf-main">
                 <label className="bf-field full"><span>Assignment title</span>
