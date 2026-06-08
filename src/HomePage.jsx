@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './lib/supabase.js'
+import { ensureAccount, signInWithGoogle, savePendingIntake, loadPendingIntake, clearPendingIntake } from './lib/auth.js'
 import Concierge from './Concierge.jsx'
 import './HomePage.css'
 
@@ -821,11 +822,12 @@ function BriefFlow({ open, onClose, prefill }) {
   const [raw, setRaw] = useState('')
   const [err, setErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [authedUser, setAuthedUser] = useState(null)
 
   const [f, setF] = useState({
     title: '', discipline: 'Nursing & Health Sciences', level: 'dnp', scope: 'cap',
     pages: 80, citation: 'APA 7', deadline: 'standard', requirements: '',
-    name: '', whatsapp: '', notes: '', wantsCall: false,
+    name: '', email: '', password: '', whatsapp: '', notes: '', wantsCall: false,
   })
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
 
@@ -837,9 +839,27 @@ function BriefFlow({ open, onClose, prefill }) {
         scope: prefill.scopeId || p.scope,
         pages: prefill.pages || p.pages,
         deadline: prefill.dlId || p.deadline,
+        // When resuming after a Google redirect, restore the saved draft.
+        ...(prefill.draft || {}),
       }))
+      if (prefill.step) setStep(prefill.step)
+      if (prefill.autoSubmit) { autoSubmitRef.current = true }
     }
-    if (open) { setStep('input'); setErr('') }
+    if (open && !prefill?.step) { setStep('input'); setErr('') }
+  }, [open])
+
+  // After a Google round-trip we land back here already signed in; finish the
+  // brief automatically using the restored draft.
+  const autoSubmitRef = useRef(false)
+  useEffect(() => {
+    if (open && autoSubmitRef.current && step === 'review') {
+      autoSubmitRef.current = false
+      submitBrief()
+    }
+  }, [open, step])
+
+  useEffect(() => {
+    if (open) supabase.auth.getSession().then(({ data: { session } }) => setAuthedUser(session?.user || null))
   }, [open])
 
   useEffect(() => { document.body.style.overflow = open ? 'hidden' : '' }, [open])
@@ -858,14 +878,10 @@ function BriefFlow({ open, onClose, prefill }) {
 
   function goReview() { setErr(''); setStep('review') }
 
-  async function submitBrief(e) {
-    e.preventDefault()
-    if (!f.name.trim() || !f.whatsapp.trim()) {
-      setErr('Please add your name and WhatsApp number so your expert can reach you.')
-      return
-    }
-    setErr(''); setSubmitting(true)
-    const { error } = await supabase.from('briefs').insert({
+  // Insert the brief row. Called once we have an authenticated user (or a
+  // signed-in session restored after Google).
+  async function insertBrief(user) {
+    return supabase.from('briefs').insert({
       title: f.title || null,
       discipline: f.discipline,
       level: f.level,
@@ -876,13 +892,55 @@ function BriefFlow({ open, onClose, prefill }) {
       requirements: f.requirements || null,
       estimate_usd: Math.round(total / 10) * 10,
       wants_call: f.wantsCall,
-      name: f.name.trim(),
-      whatsapp: f.whatsapp.trim(),
+      name: (f.name || user?.user_metadata?.name || '').trim() || null,
+      email: (f.email || user?.email || '').trim().toLowerCase() || null,
+      whatsapp: f.whatsapp.trim() || null,
       notes: f.notes || null,
+      client_id: user?.id || null,
     })
+  }
+
+  async function submitBrief(e) {
+    if (e) e.preventDefault()
+    setErr(''); setSubmitting(true)
+
+    // Resolve the account first. If we were resumed after Google, the session
+    // already exists and ensureAccount just reuses it.
+    const { data: { session } } = await supabase.auth.getSession()
+    let user = session?.user || null
+
+    if (!user) {
+      if (!f.name.trim()) { setErr('Please enter your first name.'); setSubmitting(false); return }
+      if (!/.+@.+\..+/.test(f.email.trim())) { setErr('Enter a valid email address.'); setSubmitting(false); return }
+      if (f.password.length < 6) { setErr('Choose a password of at least 6 characters.'); setSubmitting(false); return }
+      const res = await ensureAccount({ email: f.email, password: f.password, name: f.name })
+      if (res.error) { setErr(res.error); setSubmitting(false); return }
+      user = res.user
+    }
+
+    const { error } = await insertBrief(user)
     setSubmitting(false)
+    clearPendingIntake()
     if (error) { setErr('Submission failed — please try again.'); console.error(error) }
     else setStep('done')
+  }
+
+  // "Continue with Google" — persist the draft, then redirect. On return the
+  // homepage detects the pending intake and resumes this flow automatically.
+  async function googleSubmit() {
+    if (!f.name.trim()) { setErr('Please enter your first name first.'); return }
+    setErr('')
+    savePendingIntake({
+      kind: 'brief',
+      draft: {
+        title: f.title, discipline: f.discipline, level: f.level, scope: f.scope,
+        pages: f.pages, citation: f.citation, deadline: f.deadline,
+        requirements: f.requirements, name: f.name, whatsapp: f.whatsapp,
+        notes: f.notes, wantsCall: f.wantsCall,
+      },
+    })
+    const { error } = await signInWithGoogle('/')
+    if (error) { setErr('Could not start Google sign-in.'); clearPendingIntake() }
   }
 
   const waText = encodeURIComponent(
@@ -972,13 +1030,47 @@ function BriefFlow({ open, onClose, prefill }) {
                     <span><b>This is a big one — book a free 15-min scoping call first.</b><br />Best for capstones, dissertations &amp; full programs. We'll map the work before you commit a cent.</span>
                   </button>
                 )}
-                <div className="bf-divider"><span>Where do we send your quote?</span></div>
-                <label className="bf-field"><span>Your name *</span>
-                  <input type="text" value={f.name} placeholder="First name is fine"
-                    onChange={e => set('name', e.target.value)} /></label>
-                <label className="bf-field"><span>WhatsApp *</span>
-                  <input type="tel" value={f.whatsapp} placeholder="+1 555 123 4567"
-                    onChange={e => set('whatsapp', e.target.value)} /></label>
+                {authedUser ? (
+                  <>
+                    <div className="bf-divider"><span>Your account</span></div>
+                    <div className="bf-field full bf-signedin">
+                      {Ico.check({ width: 14, height: 14 })}
+                      <span>Signed in as <b>{authedUser.email}</b>. This brief will be saved to your workspace.</span>
+                    </div>
+                    <label className="bf-field full"><span>WhatsApp (optional)</span>
+                      <input type="tel" value={f.whatsapp} placeholder="+1 555 123 4567"
+                        onChange={e => set('whatsapp', e.target.value)} /></label>
+                  </>
+                ) : (
+                  <>
+                    <div className="bf-divider"><span>Create your account to track this brief</span></div>
+                    <button type="button" className="bf-google full" onClick={googleSubmit}>
+                      <svg width="17" height="17" viewBox="0 0 18 18" aria-hidden="true">
+                        <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+                        <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
+                        <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/>
+                        <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+                      </svg>
+                      Continue with Google
+                    </button>
+                    <div className="bf-orline"><span>or with email</span></div>
+                    <label className="bf-field"><span>First name *</span>
+                      <input type="text" value={f.name} placeholder="First name is fine"
+                        autoComplete="given-name" onChange={e => set('name', e.target.value)} /></label>
+                    <label className="bf-field"><span>Email *</span>
+                      <input type="email" value={f.email} placeholder="you@email.com"
+                        autoComplete="email" onChange={e => set('email', e.target.value)} /></label>
+                    <label className="bf-field"><span>Create a password *</span>
+                      <input type="password" value={f.password} placeholder="At least 6 characters"
+                        autoComplete="new-password" onChange={e => set('password', e.target.value)} /></label>
+                    <label className="bf-field"><span>WhatsApp (optional)</span>
+                      <input type="tel" value={f.whatsapp} placeholder="+1 555 123 4567"
+                        onChange={e => set('whatsapp', e.target.value)} /></label>
+                    <p className="bf-field full bf-fine" style={{ margin: 0 }}>
+                      We create your secure workspace so you can track this brief, message your expert, and upload files. Already have an account? Just use your existing email &amp; password.
+                    </p>
+                  </>
+                )}
               </div>
               <aside className="bf-side">
                 <div className="bf-est">
@@ -1022,13 +1114,18 @@ function BriefFlow({ open, onClose, prefill }) {
               <div><span>Length · deadline</span><b>{f.pages} pages · {dl.label}</b></div>
               <div><span>Estimate</span><b>{money(total)}</b></div>
             </div>
+            <p className="bf-sub" style={{ textAlign: 'center', marginTop: -4 }}>
+              Your account is ready — track this brief, message your expert, and upload files anytime from your workspace.
+            </p>
             <div className="bf-actions" style={{ justifyContent: 'center' }}>
-              <a className="btn btn-accent btn-lg"
+              <a className="btn btn-accent btn-lg" href="/workspace">
+                Go to your workspace {Ico.arrow()}
+              </a>
+              <a className="btn btn-ghost btn-lg"
                 href={`https://wa.me/${WA_NUM}?text=${waText}`}
                 target="_blank" rel="noreferrer">
-                {Ico.wa()} Send it on WhatsApp now
+                {Ico.wa()} Message us on WhatsApp
               </a>
-              <button className="btn btn-ghost btn-lg" onClick={onClose}>Done</button>
             </div>
           </div>
         )}
@@ -1054,6 +1151,23 @@ export default function HomePage() {
   useEffect(() => {
     window.MeridianOpenBrief = openBrief
     return () => { if (window.MeridianOpenBrief === openBrief) delete window.MeridianOpenBrief }
+  }, [])
+
+  // Resume a brief after a Google OAuth round-trip: if a session now exists and
+  // we saved a draft before redirecting, reopen the brief and auto-submit it.
+  useEffect(() => {
+    let cancelled = false
+    const pending = loadPendingIntake()
+    if (!pending || pending.kind !== 'brief') return
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return
+      if (session?.user) {
+        openBrief({ draft: pending.draft, step: 'review', autoSubmit: true })
+      } else {
+        clearPendingIntake()
+      }
+    })
+    return () => { cancelled = true }
   }, [])
 
   return (

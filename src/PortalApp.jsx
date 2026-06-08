@@ -1,6 +1,28 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { supabase } from './lib/supabase.js'
+import { signInWithGoogle, claimGuestRecords } from './lib/auth.js'
 import './portal.css'
+
+// Shared "Continue with Google" button used across the auth screens.
+function GoogleButton({ label = 'Continue with Google', redirectPath = '/workspace' }) {
+  const [loading, setLoading] = useState(false)
+  async function go() {
+    setLoading(true)
+    const { error } = await signInWithGoogle(redirectPath)
+    if (error) setLoading(false)
+  }
+  return (
+    <button type="button" className="btn btn-ghost btn-lg gbtn" style={{ width: '100%' }} onClick={go} disabled={loading}>
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" style={{ flexShrink: 0 }}>
+        <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/>
+        <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+      </svg>
+      {loading ? 'Connecting…' : label}
+    </button>
+  )
+}
 
 const WA_NUM = import.meta.env.VITE_WHATSAPP_NUMBER || '12057279363'
 
@@ -181,6 +203,10 @@ function SignIn({ onForgot, onSignUp }) {
         <div className="auth-card">
           <h1>Welcome <span className="italic">back.</span></h1>
           <p className="lede">Sign in to track your orders, message your expert, and pick up where you left off.</p>
+          <div style={{ marginBottom: 18 }}>
+            <GoogleButton label="Sign in with Google" />
+          </div>
+          <div className="auth-or"><span>or with email</span></div>
           <form className="auth-form" onSubmit={submit} noValidate>
             <div className="fld">
               <label htmlFor="si-email">Email address</label>
@@ -252,6 +278,10 @@ function SignUp({ initialEmail, onBack }) {
             <>
               <h1>Create your <span className="italic">account.</span></h1>
               <p className="lede">Set up your workspace to track orders, message your expert, and pick up anytime.</p>
+              <div style={{ marginBottom: 18 }}>
+                <GoogleButton label="Sign up with Google" />
+              </div>
+              <div className="auth-or"><span>or with email</span></div>
               <form className="auth-form" onSubmit={submit} noValidate>
                 <div className="fld">
                   <label htmlFor="su-name">Full name</label>
@@ -1005,6 +1035,10 @@ export default function PortalApp() {
         setAuthScreen('reset')
         setAuthChecked(true)
         return
+      }
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Link any guest orders/briefs submitted before this sign-in.
+        claimGuestRecords()
       }
       setUser(session?.user ?? null)
       setAuthChecked(true)

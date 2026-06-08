@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useId, Fragment } from "react";
 import { supabase } from "./lib/supabase.js";
+import { ensureAccount, signInWithGoogle, savePendingIntake, loadPendingIntake, clearPendingIntake } from "./lib/auth.js";
 import Logomark from "./components/Logomark.jsx";
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────────
@@ -613,20 +614,23 @@ function OrderDetailPanel({ order, user, profile, onClose, showToast }) {
 }
 
 // ── ORDER MODAL (Fix 1: client_id at submission) ───────────────────────────────
-function OrderModal({ level, program, scope, onClose, onPlaced, onViewOrders }) {
+function OrderModal({ level, program, scope, onClose, onPlaced, onViewOrders, resumeDraft }) {
   const [name,   setName]   = useState("");
   const [phone,  setPhone]  = useState("");
   const [email,  setEmail]  = useState("");
+  const [password,setPassword]=useState("");
   const [due,    setDue]    = useState("");
   const [access, setAccess] = useState("portal");
   const [pay,    setPay]    = useState("M-Pesa");
   const [brief,  setBrief]  = useState(null);
   const [notes,  setNotes]  = useState("");
   const [errs,   setErrs]   = useState({});
+  const [formErr,setFormErr]= useState("");
   const [loading,setLoading]= useState(false);
   const [done,   setDone]   = useState(false);
   const [oid,    setOid]    = useState("");
   const [blockedUrl,setBlockedUrl]= useState(null);
+  const [authedUser,setAuthedUser]= useState(null);
   const hue = level?.hue || T.accent;
   const fn = name.trim().split(" ")[0];
 
@@ -636,23 +640,40 @@ function OrderModal({ level, program, scope, onClose, onPlaced, onViewOrders }) 
     return () => document.removeEventListener("keydown", fn);
   }, []);
 
-  async function submit() {
-    const e = {};
-    if(!name.trim())  e.name=true;
-    if(!phone.trim()) e.phone=true;
-    if(!due)          e.due=true;
-    setErrs(e);
-    if(Object.keys(e).length) return;
-    setLoading(true);
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const u = session?.user || null;
+      setAuthedUser(u);
+      if (u) { setEmail(prev => prev || u.email || ""); setName(prev => prev || u.user_metadata?.name || ""); }
+      // Resume after Google: restore the draft and finish the order automatically.
+      if (u && resumeDraft && !resumedRef.current) {
+        resumedRef.current = true;
+        if (resumeDraft.name)  setName(resumeDraft.name);
+        if (resumeDraft.phone) setPhone(resumeDraft.phone);
+        if (resumeDraft.due)   setDue(resumeDraft.due);
+        if (resumeDraft.access) setAccess(resumeDraft.access);
+        if (resumeDraft.pay)   setPay(resumeDraft.pay);
+        if (resumeDraft.notes) setNotes(resumeDraft.notes);
+      }
+    });
+  }, []);
 
+  // Once resume fields are populated and the user is known, submit automatically.
+  useEffect(() => {
+    if (resumeDraft && authedUser && resumedRef.current && !done && !loading && due && name) {
+      const t = setTimeout(() => submit(), 0);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authedUser, due, name]);
+
+  // Insert the order + brief file for a resolved user.
+  async function placeOrder(user) {
     let ref = "MS-"+Date.now().toString().slice(-5);
-
     try {
       const { data: refData } = await supabase.rpc("generate_order_ref");
       if (refData) ref = refData;
-
-      // Fix 1: get current session to set client_id if already signed in
-      const { data: { session } } = await supabase.auth.getSession();
 
       const { data: order, error: orderErr } = await supabase
         .from("orders")
@@ -671,13 +692,12 @@ function OrderModal({ level, program, scope, onClose, onPlaced, onViewOrders }) 
           access_method:  access,
           payment_method: pay,
           notes:          notes || null,
-          client_name:    name,
-          client_phone:   phone,
-          client_email:   email || null,
+          client_name:    name || user?.user_metadata?.name || null,
+          client_phone:   phone || null,
+          client_email:   (email || user?.email || "").trim().toLowerCase() || null,
           status:         "new",
           payment_status: "unpaid",
-          // Fix 1: set client_id if user is already signed in
-          client_id:      session?.user?.id || null,
+          client_id:      user?.id || null,
         })
         .select().single();
 
@@ -696,17 +716,60 @@ function OrderModal({ level, program, scope, onClose, onPlaced, onViewOrders }) 
 
       if (order) {
         await supabase.from("order_log").insert({
-          order_id: order.id, actor_name: name, event: "Order created",
+          order_id: order.id, actor_name: name || user?.email, event: "Order created",
         });
       }
     } catch (err) {
       console.warn("Order write failed:", err);
     }
+    return ref;
+  }
 
+  async function submit() {
+    setFormErr("");
+    const e = {};
+    if(!name.trim())  e.name=true;
+    if(!due)          e.due=true;
+    if(!authedUser){
+      if(!/.+@.+\..+/.test(email.trim())) e.email=true;
+      if(password.length < 6)             e.password=true;
+    }
+    setErrs(e);
+    if(Object.keys(e).length){
+      if(e.email)    setFormErr("Enter a valid email address.");
+      else if(e.password) setFormErr("Choose a password of at least 6 characters.");
+      return;
+    }
+    setLoading(true);
+
+    // Resolve the account (reuse session, sign up, or sign in existing email).
+    let user = authedUser;
+    if(!user){
+      const res = await ensureAccount({ email, password, name });
+      if(res.error){ setFormErr(res.error); setLoading(false); return; }
+      user = res.user;
+      setAuthedUser(user);
+    }
+
+    const ref = await placeOrder(user);
     setOid(ref);
     setLoading(false);
     setDone(true);
     if (onPlaced) onPlaced({ ref, scopeLabel:scope?.label||"Order", level:level?.label, program, due });
+  }
+
+  // "Continue with Google": persist a draft, then redirect. On return we resume.
+  async function googleOrder() {
+    setFormErr("");
+    if(!name.trim()){ setErrs({ name:true }); setFormErr("Enter your name first."); return; }
+    if(!due){ setErrs({ due:true }); setFormErr("Set a due date first."); return; }
+    savePendingIntake({
+      kind: "order",
+      draft: { levelId: level?.id, programName: program, scopeId: scope?.id,
+        name, phone, due, access, pay, notes },
+    });
+    const { error } = await signInWithGoogle("/workspace");
+    if (error) { setFormErr("Could not start Google sign-in."); clearPendingIntake(); }
   }
 
   return (
@@ -806,14 +869,50 @@ function OrderModal({ level, program, scope, onClose, onPlaced, onViewOrders }) 
               </div>
             )}
             <Divider label="Your Details" />
+            {authedUser ? (
+              <div style={{ display:"flex", alignItems:"center", gap:9, padding:"10px 13px", marginBottom:14,
+                background:level?.hueSoft||T.accentSoft, border:`1px solid ${T.accentMid}`, borderRadius:8,
+                fontSize:12.5, color:T.inkMid, fontFamily:F.sans }}>
+                ✓ Signed in as <b style={{ color:T.ink }}>{authedUser.email}</b> — this order saves to your workspace.
+              </div>
+            ) : (
+              <>
+                <button type="button" onClick={googleOrder}
+                  style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:10,
+                    padding:"11px 14px", marginBottom:12, border:`1.5px solid ${T.border}`, borderRadius:8,
+                    background:T.surface, color:T.ink, fontSize:13.5, fontWeight:600, fontFamily:F.sans, cursor:"pointer" }}>
+                  <svg width="17" height="17" viewBox="0 0 18 18" aria-hidden="true">
+                    <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
+                    <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/>
+                    <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+                  </svg>
+                  Continue with Google
+                </button>
+                <div style={{ display:"flex", alignItems:"center", gap:10, margin:"4px 0 12px",
+                  fontSize:11, color:T.inkLight, fontFamily:F.sans }}>
+                  <span style={{ flex:1, height:1, background:T.border }} />or with email<span style={{ flex:1, height:1, background:T.border }} />
+                </div>
+              </>
+            )}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <TInput label="Full Name" value={name} onChange={setName} placeholder="Jane Doe" req err={errs.name} />
-              <TInput label="WhatsApp" value={phone} onChange={setPhone} placeholder="+1 281 677 0283" req err={errs.phone} />
+              <TInput label="First Name" value={name} onChange={setName} placeholder="Jane" req err={errs.name} />
+              <TInput label="WhatsApp (optional)" value={phone} onChange={setPhone} placeholder="+1 281 677 0283" />
             </div>
-            <TInput label="Email (optional)" value={email} onChange={setEmail} type="email" placeholder="you@email.com" />
-            {(errs.name||errs.phone) && (
-              <div style={{ fontSize:11, color:T.accent, marginTop:-8, marginBottom:14, fontFamily:F.sans }}>
-                Name and WhatsApp are required.
+            {!authedUser && (
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <TInput label="Email" value={email} onChange={setEmail} type="email" placeholder="you@email.com" req err={errs.email} />
+                <TInput label="Create Password" value={password} onChange={setPassword} type="password" placeholder="6+ characters" req err={errs.password} />
+              </div>
+            )}
+            {formErr && (
+              <div style={{ fontSize:11.5, color:T.accent, marginTop:-4, marginBottom:14, fontFamily:F.sans }}>
+                {formErr}
+              </div>
+            )}
+            {!authedUser && (
+              <div style={{ fontSize:11, color:T.inkLight, marginTop:-6, marginBottom:14, fontFamily:F.sans, lineHeight:1.5 }}>
+                We create your secure workspace so you can track this order. Already have an account? Use your existing email &amp; password.
               </div>
             )}
             <Divider label="Assignment" />
@@ -1970,6 +2069,7 @@ export default function CatalogApp({ onAdmin, page: initialPage = 'catalog' }) {
   });
   const [defaultNav, setDefaultNav] = useState("orders");
   const [user, setUser] = useState(null);
+  const [resumeOrder, setResumeOrder] = useState(null);
 
   // Fix 5: clean URL if we landed from magic link redirect
   useEffect(() => {
@@ -1985,19 +2085,30 @@ export default function CatalogApp({ onAdmin, page: initialPage = 'catalog' }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Fix 3: claim anonymous orders before surfacing the user, so the
+      // Fix 3: claim anonymous orders/briefs before surfacing the user, so the
       // subsequent orders fetch sees the updated client_id values.
       if (event === "SIGNED_IN" && session?.user) {
-        try {
-          await supabase.rpc("claim_my_orders");
-        } catch (err) {
-          console.warn("claim_my_orders:", err);
-        }
+        try { await supabase.rpc("claim_my_orders"); } catch (err) { console.warn("claim_my_orders:", err); }
+        try { await supabase.rpc("claim_my_briefs"); } catch (err) { console.warn("claim_my_briefs:", err); }
       }
       setUser(session?.user || null);
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Resume an order after a Google OAuth round-trip: reconstruct the selection
+  // from the saved draft and reopen the order modal, prefilled and signed in.
+  useEffect(() => {
+    const pending = loadPendingIntake();
+    if (!pending || pending.kind !== "order") return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) { clearPendingIntake(); return; }
+      const d = pending.draft || {};
+      const level = LEVELS.find(l => l.id === d.levelId) || null;
+      const scope = ALL_SCOPES.find(s => s.id === d.scopeId) || null;
+      setResumeOrder({ level, program: d.programName, scope, draft: d });
+    });
   }, []);
 
   function goDesk(nav="orders") { setDefaultNav(nav); setPage("workspace"); }
@@ -2019,6 +2130,18 @@ export default function CatalogApp({ onAdmin, page: initialPage = 'catalog' }) {
             onAdmin={onAdmin}
             defaultNav={defaultNav}
             user={user} />}
+
+      {resumeOrder && (
+        <OrderModal
+          level={resumeOrder.level}
+          program={resumeOrder.program}
+          scope={resumeOrder.scope}
+          resumeDraft={resumeOrder.draft}
+          onClose={() => { clearPendingIntake(); setResumeOrder(null); }}
+          onPlaced={() => { clearPendingIntake(); }}
+          onViewOrders={() => { clearPendingIntake(); setResumeOrder(null); goDesk("orders"); }}
+        />
+      )}
     </div>
   );
 }

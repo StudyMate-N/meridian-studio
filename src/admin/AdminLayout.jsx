@@ -4,6 +4,7 @@ import { T, F, initials } from './constants.js'
 import { useOrders }  from './hooks/useOrders.js'
 import { useClients } from './hooks/useClients.js'
 import { useWriters } from './hooks/useWriters.js'
+import { useBriefs }  from './hooks/useBriefs.js'
 
 import Dashboard  from './pages/Dashboard.jsx'
 import Orders     from './pages/Orders.jsx'
@@ -37,6 +38,7 @@ export default function AdminLayout({ user }) {
   const { orders,  loading: ordersLoading,  toast, setToast, refetch: refetchOrders } = useOrders()
   const { clients, loading: clientsLoading, refetch: refetchClients } = useClients()
   const { writers, loading: writersLoading, refetch: refetchWriters } = useWriters()
+  const { briefs,  refetch: refetchBriefs } = useBriefs()
 
   function navigate(p, state = null) {
     setPage(p)
@@ -185,6 +187,7 @@ export default function AdminLayout({ user }) {
             <Clients
               clients={clients}
               orders={orders}
+              briefs={briefs}
               user={user}
               writers={writers}
             />
