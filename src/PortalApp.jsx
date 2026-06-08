@@ -155,7 +155,7 @@ function AuthAside() {
 }
 
 // ── SIGN IN ───────────────────────────────────────────────────────────────────
-function SignIn({ onForgot }) {
+function SignIn({ onForgot, onSignUp }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -201,13 +201,100 @@ function SignIn({ onForgot }) {
                 Forgot your password?
               </a>
             </p>
-            <p className="auth-note">
-              {PIco.info({ width: 16, height: 16 })}
-              <span>First time? Your starting password is <strong>12345</strong> — you'll change it in your profile.</span>
-            </p>
           </form>
           <div className="auth-div">new to meridian?</div>
-          <p className="auth-foot">Don't have an order yet? <a href="/#pricing">Start a brief →</a></p>
+          <p className="auth-foot">
+            Don't have an account? <a href="#" onClick={e => { e.preventDefault(); onSignUp(email) }}>Create one →</a>
+          </p>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ── SIGN UP ───────────────────────────────────────────────────────────────────
+function SignUp({ initialEmail, onBack }) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState(initialEmail || '')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function submit(e) {
+    e.preventDefault()
+    if (!name.trim()) { setErr('Enter your name.'); return }
+    if (!/.+@.+\..+/.test(email.trim())) { setErr('Enter a valid email address.'); return }
+    if (password.length < 6) { setErr('Password must be at least 6 characters.'); return }
+    if (password !== confirm) { setErr('Passwords do not match.'); return }
+    setErr(''); setLoading(true)
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: { name: name.trim() },
+        emailRedirectTo: 'https://primemeridian.academy/workspace',
+      },
+    })
+    setLoading(false)
+    if (error) { setErr(error.message); return }
+    // If email confirmation is required, no active session is returned.
+    if (!data.session) { setSent(true) }
+  }
+
+  return (
+    <div className="auth">
+      <AuthAside />
+      <main className="auth-main">
+        <div className="auth-card">
+          {!sent ? (
+            <>
+              <h1>Create your <span className="italic">account.</span></h1>
+              <p className="lede">Set up your workspace to track orders, message your expert, and pick up anytime.</p>
+              <form className="auth-form" onSubmit={submit} noValidate>
+                <div className="fld">
+                  <label htmlFor="su-name">Full name</label>
+                  <input id="su-name" type="text" placeholder="Your name"
+                    value={name} onChange={e => setName(e.target.value)} autoComplete="name" />
+                </div>
+                <div className="fld">
+                  <label htmlFor="su-email">Email address</label>
+                  <input id="su-email" type="email" placeholder="you@email.com"
+                    value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
+                </div>
+                <div className="fld">
+                  <label htmlFor="su-pw">Password</label>
+                  <input id="su-pw" type="password" placeholder="At least 6 characters"
+                    value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+                </div>
+                <div className="fld">
+                  <label htmlFor="su-cf">Confirm password</label>
+                  <input id="su-cf" type="password" placeholder="Repeat your password"
+                    value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" />
+                </div>
+                {err && <div style={{ color: 'var(--bad)', fontSize: 13 }} role="alert">{err}</div>}
+                <button type="submit" className="btn btn-accent btn-lg" style={{ width: '100%' }} disabled={loading}>
+                  {loading ? 'Creating account…' : <>Create account {PIco.arrow()}</>}
+                </button>
+              </form>
+              <div className="auth-div">already with us?</div>
+              <p className="auth-foot">
+                Already have an account? <a href="#" onClick={e => { e.preventDefault(); onBack() }}>Sign in →</a>
+              </p>
+            </>
+          ) : (
+            <div className="auth-ok">
+              <span className="ck" aria-hidden="true">{PIco.msg({ width: 28, height: 28 })}</span>
+              <h1 style={{ fontSize: 38 }}>Confirm your <span className="italic">email.</span></h1>
+              <p className="lede" style={{ marginTop: 16 }}>
+                We sent a confirmation link to <span className="em">{email}</span>. Click it to activate your account, then sign in.
+              </p>
+              <p className="auth-foot" style={{ marginTop: 18 }}>
+                <a href="#" onClick={e => { e.preventDefault(); onBack() }}>← Back to sign in</a>
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>
@@ -904,8 +991,8 @@ export default function PortalApp() {
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
-  const [authScreen, setAuthScreen] = useState('signin') // 'signin' | 'forgot' | 'reset'
-  const [forgotInitialEmail, setForgotInitialEmail] = useState('')
+  const [authScreen, setAuthScreen] = useState('signin') // 'signin' | 'signup' | 'forgot' | 'reset'
+  const [authEmail, setAuthEmail] = useState('')
   const [route, setRoute] = useState('orders')
   const [drawer, setDrawer] = useState(null)
   const [current, setCurrent] = useState(null)
@@ -970,9 +1057,15 @@ export default function PortalApp() {
 
   if (!user) {
     if (authScreen === 'forgot') {
-      return <div className="app"><ForgotPassword initialEmail={forgotInitialEmail} onBack={() => setAuthScreen('signin')} /></div>
+      return <div className="app"><ForgotPassword initialEmail={authEmail} onBack={() => setAuthScreen('signin')} /></div>
     }
-    return <div className="app"><SignIn onForgot={(email) => { setForgotInitialEmail(email); setAuthScreen('forgot') }} /></div>
+    if (authScreen === 'signup') {
+      return <div className="app"><SignUp initialEmail={authEmail} onBack={() => setAuthScreen('signin')} /></div>
+    }
+    return <div className="app"><SignIn
+      onForgot={(email) => { setAuthEmail(email); setAuthScreen('forgot') }}
+      onSignUp={(email) => { setAuthEmail(email); setAuthScreen('signup') }}
+    /></div>
   }
 
   return (
