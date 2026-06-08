@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../../lib/supabase.js'
-import { T, F, initials } from '../constants.js'
+import { T, F, STATUS_CONFIG, fmtDate, initials } from '../constants.js'
 import { StatusBadge } from '../components/StatusBadge.jsx'
 
 export default function Writers({ writers, refetch }) {
@@ -8,37 +8,6 @@ export default function Writers({ writers, refetch }) {
   const [form,     setForm]     = useState({ name: '', email: '', specialty: '' })
   const [saving,   setSaving]   = useState(false)
   const [toggling, setToggling] = useState(null)
-
-  // Writer applications state
-  const [applications,    setApplications]    = useState([])
-  const [appsLoading,     setAppsLoading]     = useState(true)
-  const [updatingApp,     setUpdatingApp]     = useState(null)
-
-  useEffect(() => {
-    fetchApplications()
-  }, [])
-
-  async function fetchApplications() {
-    setAppsLoading(true)
-    const { data, error } = await supabase
-      .from('writer_applications')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (!error) setApplications(data || [])
-    else console.error('Fetch applications error:', error)
-    setAppsLoading(false)
-  }
-
-  async function updateAppStatus(id, status) {
-    setUpdatingApp(id)
-    const { error } = await supabase
-      .from('writer_applications')
-      .update({ status })
-      .eq('id', id)
-    if (!error) setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a))
-    else console.error('Update application status error:', error)
-    setUpdatingApp(null)
-  }
 
   async function addWriter() {
     if (!form.name.trim() || !form.email.trim()) return
@@ -68,108 +37,10 @@ export default function Writers({ writers, refetch }) {
   const active   = writers.filter(w => w.active)
   const inactive = writers.filter(w => !w.active)
 
-  const APP_STATUS_OPTIONS = ['pending', 'contacted', 'rejected', 'onboarded']
-  const APP_STATUS_COLORS = {
-    pending:   { bg: '#fff8e6', color: '#b45309' },
-    contacted: { bg: '#e8f4fd', color: '#1d4ed8' },
-    rejected:  { bg: '#fef2f2', color: '#b91c1c' },
-    onboarded: { bg: '#f0fdf4', color: '#15803d' },
-  }
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-
-      {/* ── Writer Applications ─────────────────────────────────── */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Add writer */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div>
-            <div style={{ fontFamily: F.sans, fontSize: 15, fontWeight: 700, color: T.ink }}>
-              Writer Applications
-            </div>
-            <div style={{ fontFamily: F.sans, fontSize: 12, color: T.inkMid, marginTop: 2 }}>
-              Expressions of interest from the homepage
-            </div>
-          </div>
-          <button
-            onClick={fetchApplications}
-            style={{
-              padding: '6px 14px', borderRadius: 8, border: `1px solid ${T.border}`,
-              background: T.surface, fontFamily: F.sans, fontSize: 12, fontWeight: 600,
-              color: T.inkMid, cursor: 'pointer',
-            }}
-          >
-            Refresh
-          </button>
-        </div>
-
-        {appsLoading ? (
-          <div style={{ fontFamily: F.sans, fontSize: 13, color: T.inkMid, padding: 16 }}>Loading applications…</div>
-        ) : applications.length === 0 ? (
-          <div style={{
-            background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12,
-            padding: '28px 20px', textAlign: 'center',
-            fontFamily: F.sans, fontSize: 13, color: T.inkMid,
-          }}>
-            No applications yet
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: F.sans, fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: `2px solid ${T.border}` }}>
-                  {['Name', 'WhatsApp', 'Degree', 'Specialty', 'Date', 'Status'].map(h => (
-                    <th key={h} style={{
-                      padding: '8px 12px', textAlign: 'left',
-                      fontWeight: 700, fontSize: 11, color: T.inkMid,
-                      textTransform: 'uppercase', letterSpacing: '0.05em',
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {applications.map(app => {
-                  const sc = APP_STATUS_COLORS[app.status] || APP_STATUS_COLORS.pending
-                  return (
-                    <tr key={app.id} style={{ borderBottom: `1px solid ${T.border}` }}>
-                      <td style={{ padding: '10px 12px', fontWeight: 600, color: T.ink }}>{app.name}</td>
-                      <td style={{ padding: '10px 12px', color: T.inkMid }}>{app.phone}</td>
-                      <td style={{ padding: '10px 12px', color: T.inkMid }}>{app.degree}</td>
-                      <td style={{ padding: '10px 12px', color: T.inkLight }}>{app.specialty || '—'}</td>
-                      <td style={{ padding: '10px 12px', color: T.inkLight, whiteSpace: 'nowrap' }}>
-                        {new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </td>
-                      <td style={{ padding: '10px 12px' }}>
-                        <select
-                          value={app.status}
-                          disabled={updatingApp === app.id}
-                          onChange={e => updateAppStatus(app.id, e.target.value)}
-                          style={{
-                            padding: '4px 8px', borderRadius: 6, border: 'none',
-                            fontFamily: F.sans, fontSize: 11, fontWeight: 700,
-                            background: sc.bg, color: sc.color,
-                            cursor: updatingApp === app.id ? 'not-allowed' : 'pointer',
-                            outline: 'none',
-                          }}
-                        >
-                          {APP_STATUS_OPTIONS.map(s => (
-                            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* ── Add Writer ──────────────────────────────────────────── */}
-      <div>
-        <div style={{ fontFamily: F.sans, fontSize: 12, fontWeight: 700, color: T.inkMid, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
-          Team Roster
-        </div>
         {showForm ? (
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ fontFamily: F.sans, fontSize: 14, fontWeight: 700, color: T.ink }}>Add New Writer</div>
@@ -202,7 +73,7 @@ export default function Writers({ writers, refetch }) {
         )}
       </div>
 
-      {/* ── Active writers ──────────────────────────────────────── */}
+      {/* Active writers */}
       <WriterSection
         title={`Active Writers (${active.length})`}
         writers={active}
@@ -210,7 +81,7 @@ export default function Writers({ writers, refetch }) {
         onToggle={toggleActive}
       />
 
-      {/* ── Inactive writers ────────────────────────────────────── */}
+      {/* Inactive */}
       {inactive.length > 0 && (
         <WriterSection
           title={`Inactive Writers (${inactive.length})`}
@@ -233,7 +104,7 @@ function WriterSection({ title, writers, toggling, onToggle, dimmed }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
         {writers.map(writer => {
           const wOrders = writer.orders || []
-          const activeOrds    = wOrders.filter(o => !['closed','delivered'].includes(o.status))
+          const activeOrds  = wOrders.filter(o => !['closed','delivered'].includes(o.status))
           const completedOrds = wOrders.filter(o => ['closed','delivered'].includes(o.status))
 
           return (
