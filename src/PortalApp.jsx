@@ -127,9 +127,96 @@ function SectionLabel({ children }) {
   )
 }
 
+// ── AUTH ASIDE (shared) ───────────────────────────────────────────────────────
+function AuthAside() {
+  return (
+    <aside className="auth-aside on-ink">
+      <a className="brand" href="/">
+        <span className="mk" aria-hidden="true">M</span>
+        <span>
+          <span className="nm" style={{ display: 'block' }}>Meridian Studio</span>
+          <span className="tg">Client workspace</span>
+        </span>
+      </a>
+      <div>
+        <p className="auth-quote">
+          "They didn't just hand me a paper — they walked me through it until I could{' '}
+          <span className="accent">defend every line.</span>"
+        </p>
+        <p className="auth-attr">— Dana R. · DNP Candidate</p>
+      </div>
+      <div className="auth-mini">
+        <div className="m"><div className="n">4.9★</div><div className="l">Student rating</div></div>
+        <div className="m"><div className="n">98%</div><div className="l">Delivered on time</div></div>
+        <div className="m"><div className="n">100%</div><div className="l">Repeat specialists</div></div>
+      </div>
+    </aside>
+  )
+}
+
 // ── SIGN IN ───────────────────────────────────────────────────────────────────
-function SignIn({ onAuthed }) {
+function SignIn({ onForgot }) {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function submit(e) {
+    e.preventDefault()
+    if (!/.+@.+\..+/.test(email.trim())) { setErr('Enter a valid email address.'); return }
+    if (!password) { setErr('Enter your password.'); return }
+    setErr(''); setLoading(true)
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
+    setLoading(false)
+    if (error) { setErr(error.message); return }
+  }
+
+  return (
+    <div className="auth">
+      <AuthAside />
+      <main className="auth-main">
+        <div className="auth-card">
+          <h1>Welcome <span className="italic">back.</span></h1>
+          <p className="lede">Sign in to track your orders, message your expert, and pick up where you left off.</p>
+          <form className="auth-form" onSubmit={submit} noValidate>
+            <div className="fld">
+              <label htmlFor="si-email">Email address</label>
+              <input id="si-email" type="email" placeholder="you@email.com"
+                value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
+            </div>
+            <div className="fld">
+              <label htmlFor="si-pw">Password</label>
+              <input id="si-pw" type="password" placeholder="Your password"
+                value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" />
+            </div>
+            {err && <div style={{ color: 'var(--bad)', fontSize: 13 }} role="alert">{err}</div>}
+            <button type="submit" className="btn btn-accent btn-lg" style={{ width: '100%' }} disabled={loading}>
+              {loading ? 'Signing in…' : <>Sign in {PIco.arrow()}</>}
+            </button>
+            <p style={{ textAlign: 'center', marginTop: 12 }}>
+              <a href="#" style={{ color: 'var(--accent)', fontSize: 14 }} onClick={e => { e.preventDefault(); onForgot(email) }}>
+                Forgot your password?
+              </a>
+            </p>
+            <p className="auth-note">
+              {PIco.info({ width: 16, height: 16 })}
+              <span>First time? Your starting password is <strong>12345</strong> — you'll change it in your profile.</span>
+            </p>
+          </form>
+          <div className="auth-div">new to meridian?</div>
+          <p className="auth-foot">Don't have an order yet? <a href="/#pricing">Start a brief →</a></p>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ── FORGOT PASSWORD ───────────────────────────────────────────────────────────
+function ForgotPassword({ initialEmail, onBack }) {
+  const [email, setEmail] = useState(initialEmail || '')
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
@@ -138,9 +225,8 @@ function SignIn({ onAuthed }) {
     e.preventDefault()
     if (!/.+@.+\..+/.test(email.trim())) { setErr('Enter a valid email address.'); return }
     setErr(''); setLoading(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: 'https://primemeridian.academy/workspace' },
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: 'https://primemeridian.academy/workspace',
     })
     setLoading(false)
     if (error) { setErr(error.message); return }
@@ -149,67 +235,101 @@ function SignIn({ onAuthed }) {
 
   return (
     <div className="auth">
-      <aside className="auth-aside on-ink">
-        <a className="brand" href="/">
-          <span className="mk" aria-hidden="true">M</span>
-          <span>
-            <span className="nm" style={{ display: 'block' }}>Meridian Studio</span>
-            <span className="tg">Client workspace</span>
-          </span>
-        </a>
-        <div>
-          <p className="auth-quote">
-            "They didn't just hand me a paper — they walked me through it until I could{' '}
-            <span className="accent">defend every line.</span>"
-          </p>
-          <p className="auth-attr">— Dana R. · DNP Candidate</p>
-        </div>
-        <div className="auth-mini">
-          <div className="m"><div className="n">4.9★</div><div className="l">Student rating</div></div>
-          <div className="m"><div className="n">98%</div><div className="l">Delivered early</div></div>
-          <div className="m"><div className="n">Same</div><div className="l">Expert, every time</div></div>
-        </div>
-      </aside>
-
+      <AuthAside />
       <main className="auth-main">
         <div className="auth-card">
           {!sent ? (
             <>
-              <h1>Welcome <span className="italic">back.</span></h1>
-              <p className="lede">Sign in to track your orders, message your expert, and pick up where you left off.</p>
+              <h1>Reset your <span className="italic">password.</span></h1>
+              <p className="lede">Enter your email and we'll send a secure reset link.</p>
               <form className="auth-form" onSubmit={submit} noValidate>
                 <div className="fld">
-                  <label htmlFor="si-email">Email address</label>
-                  <input id="si-email" type="email" placeholder="you@email.com"
-                    value={email} onChange={e => setEmail(e.target.value)} aria-invalid={!!err} />
+                  <label htmlFor="fp-email">Email address</label>
+                  <input id="fp-email" type="email" placeholder="you@email.com"
+                    value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
                 </div>
                 {err && <div style={{ color: 'var(--bad)', fontSize: 13 }} role="alert">{err}</div>}
                 <button type="submit" className="btn btn-accent btn-lg" style={{ width: '100%' }} disabled={loading}>
-                  {loading ? 'Sending…' : <>Email me a magic link {PIco.arrow()}</>}
+                  {loading ? 'Sending…' : <>Send reset link {PIco.arrow()}</>}
                 </button>
-                <p className="auth-note">
-                  {PIco.info({ width: 16, height: 16 })}
-                  <span>No password needed. We'll email a secure one-time link that signs you straight in.</span>
-                </p>
               </form>
-              <div className="auth-div">new to Meridian?</div>
-              <p className="auth-foot">Don't have an order yet? <a href="/#pricing">Start a brief →</a></p>
+              <p className="auth-foot" style={{ marginTop: 18 }}>
+                <a href="#" onClick={e => { e.preventDefault(); onBack() }}>← Back to sign in</a>
+              </p>
             </>
           ) : (
             <div className="auth-ok">
-              <span className="ck" aria-hidden="true">
-                {PIco.msg({ width: 28, height: 28 })}
-              </span>
+              <span className="ck" aria-hidden="true">{PIco.msg({ width: 28, height: 28 })}</span>
               <h1 style={{ fontSize: 38 }}>Check your <span className="italic">inbox.</span></h1>
               <p className="lede" style={{ marginTop: 16 }}>
-                We sent a secure sign-in link to <span className="em">{email}</span>. It's valid for 15 minutes.
+                We sent a password reset link to <span className="em">{email}</span>. It's valid for 1 hour.
               </p>
-              <button className="btn btn-accent btn-lg" style={{ width: '100%', marginTop: 26 }} onClick={onAuthed}>
-                Continue to workspace {PIco.arrow()}
-              </button>
               <p className="auth-foot" style={{ marginTop: 18 }}>
-                Didn't get it? <a href="#" onClick={e => { e.preventDefault(); setSent(false) }}>Try another email</a>
+                Didn't get it? <a href="#" onClick={e => { e.preventDefault(); setSent(false) }}>Try again</a>
+                {' · '}
+                <a href="#" onClick={e => { e.preventDefault(); onBack() }}>Back to sign in</a>
               </p>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ── SET NEW PASSWORD (after reset link) ───────────────────────────────────────
+function SetNewPassword() {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function submit(e) {
+    e.preventDefault()
+    if (password.length < 6) { setErr('Password must be at least 6 characters.'); return }
+    if (password !== confirm) { setErr('Passwords do not match.'); return }
+    setErr(''); setLoading(true)
+    const { error } = await supabase.auth.updateUser({ password })
+    setLoading(false)
+    if (error) { setErr(error.message); return }
+    setDone(true)
+  }
+
+  return (
+    <div className="auth">
+      <AuthAside />
+      <main className="auth-main">
+        <div className="auth-card">
+          {!done ? (
+            <>
+              <h1>New <span className="italic">password.</span></h1>
+              <p className="lede">Choose a strong password for your account.</p>
+              <form className="auth-form" onSubmit={submit} noValidate>
+                <div className="fld">
+                  <label htmlFor="np-pw">New password</label>
+                  <input id="np-pw" type="password" placeholder="At least 6 characters"
+                    value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+                </div>
+                <div className="fld">
+                  <label htmlFor="np-cf">Confirm password</label>
+                  <input id="np-cf" type="password" placeholder="Repeat your password"
+                    value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" />
+                </div>
+                {err && <div style={{ color: 'var(--bad)', fontSize: 13 }} role="alert">{err}</div>}
+                <button type="submit" className="btn btn-accent btn-lg" style={{ width: '100%' }} disabled={loading}>
+                  {loading ? 'Saving…' : <>Set password {PIco.arrow()}</>}
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="auth-ok">
+              <span className="ck" aria-hidden="true">{PIco.msg({ width: 28, height: 28 })}</span>
+              <h1 style={{ fontSize: 38 }}>Password <span className="italic">updated.</span></h1>
+              <p className="lede" style={{ marginTop: 16 }}>You're all set. You can now sign in with your new password.</p>
+              <a href="/workspace" className="btn btn-accent btn-lg" style={{ display: 'block', width: '100%', marginTop: 26, textAlign: 'center' }}>
+                Go to workspace {PIco.arrow()}
+              </a>
             </div>
           )}
         </div>
@@ -644,6 +764,9 @@ function Profile({ user, profile, onToast }) {
   })
   const [notif, setNotif] = useState({ status: true, messages: true, marketing: false })
   const [saving, setSaving] = useState(false)
+  const [pw, setPw] = useState({ current: '', next: '', confirm: '' })
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwErr, setPwErr] = useState('')
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
   const userInitials = f.name ? initials(f.name) : (user?.email?.[0] || '?').toUpperCase()
 
@@ -655,6 +778,19 @@ function Profile({ user, profile, onToast }) {
     }).eq('id', user.id)
     setSaving(false)
     onToast('Profile saved')
+  }
+
+  async function changePassword(e) {
+    e.preventDefault()
+    setPwErr('')
+    if (pw.next.length < 6) { setPwErr('New password must be at least 6 characters.'); return }
+    if (pw.next !== pw.confirm) { setPwErr('Passwords do not match.'); return }
+    setPwSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: pw.next })
+    setPwSaving(false)
+    if (error) { setPwErr(error.message); return }
+    setPw({ current: '', next: '', confirm: '' })
+    onToast('Password updated')
   }
 
   return (
@@ -682,6 +818,32 @@ function Profile({ user, profile, onToast }) {
             <div className="fld"><label>Email (used to sign in)</label><input type="email" value={user?.email || ''} readOnly style={{ opacity: 0.6 }} /></div>
             <div className="fld full"><label>WhatsApp / phone</label><input type="tel" value={f.phone} onChange={e => set('phone', e.target.value)} placeholder="+1 555 123 4567" /></div>
           </div>
+        </div>
+      </div>
+
+      <div className="psec">
+        <div className="psec-h">Password</div>
+        <div className="pcard">
+          <form onSubmit={changePassword} noValidate>
+            <div className="pgrid">
+              <div className="fld">
+                <label>New password</label>
+                <input type="password" placeholder="At least 6 characters" value={pw.next}
+                  onChange={e => setPw(p => ({ ...p, next: e.target.value }))} autoComplete="new-password" />
+              </div>
+              <div className="fld">
+                <label>Confirm new password</label>
+                <input type="password" placeholder="Repeat new password" value={pw.confirm}
+                  onChange={e => setPw(p => ({ ...p, confirm: e.target.value }))} autoComplete="new-password" />
+              </div>
+            </div>
+            {pwErr && <div style={{ color: 'var(--bad)', fontSize: 13, marginTop: 8 }} role="alert">{pwErr}</div>}
+            <div style={{ marginTop: 14 }}>
+              <button type="submit" className="btn btn-accent" disabled={pwSaving}>
+                {pwSaving ? 'Saving…' : 'Update password'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -742,6 +904,8 @@ export default function PortalApp() {
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  const [authScreen, setAuthScreen] = useState('signin') // 'signin' | 'forgot' | 'reset'
+  const [forgotInitialEmail, setForgotInitialEmail] = useState('')
   const [route, setRoute] = useState('orders')
   const [drawer, setDrawer] = useState(null)
   const [current, setCurrent] = useState(null)
@@ -749,7 +913,12 @@ export default function PortalApp() {
 
   // auth state listener
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setAuthScreen('reset')
+        setAuthChecked(true)
+        return
+      }
       setUser(session?.user ?? null)
       setAuthChecked(true)
     })
@@ -795,8 +964,15 @@ export default function PortalApp() {
     )
   }
 
+  if (authScreen === 'reset') {
+    return <div className="app"><SetNewPassword /></div>
+  }
+
   if (!user) {
-    return <div className="app"><SignIn onAuthed={() => {}} /></div>
+    if (authScreen === 'forgot') {
+      return <div className="app"><ForgotPassword initialEmail={forgotInitialEmail} onBack={() => setAuthScreen('signin')} /></div>
+    }
+    return <div className="app"><SignIn onForgot={(email) => { setForgotInitialEmail(email); setAuthScreen('forgot') }} /></div>
   }
 
   return (
