@@ -3,17 +3,10 @@ import { T, F, fmtDate, initials } from '../constants.js'
 import { StatusBadge } from '../components/StatusBadge.jsx'
 import OrderDrawer from '../components/OrderDrawer.jsx'
 
-export default function Clients({ clients, orders, briefs = [], user, writers }) {
+export default function Clients({ clients, orders, user, writers }) {
   const [search,      setSearch]      = useState('')
   const [selected,    setSelected]    = useState(null) // client
   const [activeOrder, setActiveOrder] = useState(null)
-
-  // Briefs submitted by the selected client (matched by account or email).
-  const clientBriefs = useMemo(() => {
-    if (!selected) return []
-    return briefs.filter(b => b.client_id === selected.id ||
-      (b.email && selected.email && b.email.toLowerCase() === selected.email.toLowerCase()))
-  }, [selected, briefs])
 
   const filtered = useMemo(() => {
     if (!search) return clients
@@ -128,9 +121,9 @@ export default function Clients({ clients, orders, briefs = [], user, writers })
             }}>✕ Close</button>
           </div>
 
-          {clientOrders.length === 0 && clientBriefs.length === 0 && (
+          {clientOrders.length === 0 && (
             <div style={{ color: T.inkLight, fontFamily: F.sans, fontSize: 13, textAlign: 'center', padding: 24 }}>
-              No orders or briefs from this client yet.
+              No orders from this client.
             </div>
           )}
 
@@ -147,42 +140,6 @@ export default function Clients({ clients, orders, briefs = [], user, writers })
               <StatusBadge status={order.status} />
             </div>
           ))}
-
-          {/* Briefs submitted by this client (homepage intake, pre-order) */}
-          {clientBriefs.length > 0 && (
-            <>
-              <div style={{ fontFamily: F.sans, fontSize: 11, fontWeight: 700, color: T.inkLight,
-                textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 8 }}>
-                Briefs submitted ({clientBriefs.length})
-              </div>
-              {clientBriefs.map(b => (
-                <div key={b.id} style={{
-                  padding: '12px 14px', borderRadius: 10, border: `1px dashed ${T.border}`,
-                  background: T.alt,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontFamily: F.sans, fontSize: 12.5, fontWeight: 600, color: T.ink, flex: 1 }}>
-                      {b.title || 'Untitled brief'}
-                    </span>
-                    {b.wants_call && <span style={{ fontSize: 10, color: T.accent, fontWeight: 700 }}>WANTS CALL</span>}
-                    {b.estimate_usd != null && <span style={{ fontFamily: F.mono, fontSize: 12, color: T.inkMid }}>~${b.estimate_usd}</span>}
-                  </div>
-                  <div style={{ fontFamily: F.sans, fontSize: 11, color: T.inkMid }}>
-                    {[b.discipline, b.level && b.level.toUpperCase(), b.pages && `${b.pages} pp`, b.citation, b.deadline]
-                      .filter(Boolean).join(' · ')}
-                  </div>
-                  {b.requirements && (
-                    <div style={{ fontFamily: F.sans, fontSize: 11, color: T.inkLight, marginTop: 6, whiteSpace: 'pre-wrap' }}>
-                      {b.requirements}
-                    </div>
-                  )}
-                  <div style={{ fontFamily: F.sans, fontSize: 10, color: T.inkLight, marginTop: 6 }}>
-                    Submitted {fmtDate(b.created_at)}{b.whatsapp ? ` · ${b.whatsapp}` : ''}
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
         </div>
       )}
 
