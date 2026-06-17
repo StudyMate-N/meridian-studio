@@ -13,6 +13,22 @@
 .app .stat .s-n { font-family: var(--serif); font-size: 40px; line-height: 1; letter-spacing: -0.02em; margin-top: 16px; }
 .app .stat .s-l { font-size: 13px; color: var(--muted); margin-top: 8px; }
 
+/* Per-metric color coding — a left accent strip + tinted icon tile + figure so
+   each at-a-glance stat reads distinctly instead of four identical beige cards. */
+.app .stat::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--line-2); }
+.app .stat.t-accent::before { background: var(--accent); }
+.app .stat.t-accent .s-ic { background: var(--accent-soft); color: var(--accent-deep); }
+.app .stat.t-accent .s-n  { color: var(--accent-deep); }
+.app .stat.t-info::before { background: var(--info); }
+.app .stat.t-info .s-ic   { background: var(--info-bg); color: var(--info); }
+.app .stat.t-info .s-n    { color: var(--info); }
+.app .stat.t-good::before { background: var(--good); }
+.app .stat.t-good .s-ic   { background: var(--good-bg); color: var(--good); }
+.app .stat.t-good .s-n    { color: var(--good); }
+.app .stat.t-warn::before { background: var(--warn); }
+.app .stat.t-warn .s-ic   { background: var(--warn-bg); color: var(--warn); }
+.app .stat.t-warn .s-n    { color: var(--warn); }
+
 .app .cols-2 { display: grid; grid-template-columns: 1fr 1.35fr; gap: 22px; align-items: start; }
 .app .block { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); }
 .app .block-h { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--line); }
@@ -44,7 +60,16 @@
 .app .who-cell .avatar { width: 30px; height: 30px; font-size: 12px; }
 
 @media (max-width: 1080px) { .app .statgrid { grid-template-columns: 1fr 1fr; } .app .cols-2 { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .app .statgrid { grid-template-columns: 1fr; } }
+/* Phones: keep a compact 2×2 grid (NOT one giant card per metric) and shrink the
+   number/icon/padding so the four at-a-glance stats fit in a tidy block. */
+@media (max-width: 560px) {
+  .app .statgrid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .app .stat { padding: 13px 14px; }
+  .app .stat .s-ic { width: 30px; height: 30px; }
+  .app .stat .s-n { font-size: 24px; margin-top: 9px; }
+  .app .stat .s-l { font-size: 11.5px; margin-top: 5px; }
+  .app .dw-quick { grid-template-columns: 1fr; }
+}
 
 /* admin orders bar / chips */
 .app .ord-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }

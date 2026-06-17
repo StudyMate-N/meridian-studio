@@ -1,0 +1,17 @@
+/* ============================================================
+   Admin panel skin — INDIGO ops-console accent over the shared
+   Meridian system. Scoped to `.mer-root.ops-root`.
+   ============================================================ */
+.mer-root.ops-root {
+  --accent:       #43479E;   /* indigo — admin action color */
+  --accent-deep:  #34377E;
+  --accent-soft:  #E6E6F4;
+  --on-accent:    #FBFBFE;
+
+  --roast:        #181826;
+  --roast-2:      #232338;
+  --paper:        #F2F1EC;
+  --surface-2:    #F1EFE7;
+  --line:         #E5E1D6;
+}
+.mer-root.ops-root ::selection { background: var(--accent-soft); color: var(--accent-deep); }

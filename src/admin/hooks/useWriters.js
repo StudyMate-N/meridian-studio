@@ -10,7 +10,7 @@ export function useWriters() {
     setLoading(true)
     const { data, error: err } = await supabase
       .from('writers')
-      .select('id, name, email, specialty, active, orders:orders(id, status, scope_label, due_date)')
+      .select('id, profile_id, name, email, specialty, active, mpesa_number, mpesa_name, mpesa_verified, profile:profiles!writers_profile_id_fkey(disabled_at), orders:orders!orders_writer_id_fkey(id, status, scope_label, due_date)')
       .order('name')
     if (err) { setError(err.message); console.error('useWriters:', err) }
     else setWriters(data || [])

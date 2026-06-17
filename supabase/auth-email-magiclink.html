@@ -1,0 +1,55 @@
+<!-- Meridian Studio — themed Magic Link email for Supabase Auth.
+     Paste into: Dashboard → Authentication → Email Templates → Magic Link.
+     Supabase injects the one-time link via {{ .ConfirmationURL }}.
+     (This keeps `magiclink` on Supabase's own deliverability path — it is the
+     one critical email that must never be paused by the master switch.) -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=Hanken+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+    <title>Your Meridian sign-in link</title>
+  </head>
+  <body style="margin:0;padding:0;background:#F4F1EA;-webkit-font-smoothing:antialiased;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F4F1EA;">Tap to sign in — this link expires shortly.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F1EA;padding:30px 12px;">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#FBFAF7;border:1px solid #E4DCCF;border-radius:16px;overflow:hidden;">
+          <tr><td style="background:#211A14;padding:20px 30px;">
+            <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+              <td style="padding-right:13px;vertical-align:middle;"><div style="width:40px;height:40px;background:#BD5A33;border-radius:9px;text-align:center;font-family:Georgia,serif;font-size:24px;font-weight:bold;color:#fff;line-height:40px;">M</div></td>
+              <td style="vertical-align:middle;">
+                <div style="font-family:'Newsreader',Georgia,serif;font-size:20px;color:#fff;line-height:1;">Meridian Studio</div>
+                <div style="font-family:'Hanken Grotesk',Arial,sans-serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(246,241,233,.6);margin-top:4px;">Secure sign-in</div>
+              </td>
+            </tr></table>
+          </td></tr>
+          <tr><td style="padding:36px 36px 4px;">
+            <div style="font-family:'Hanken Grotesk',Arial,sans-serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#BD5A33;font-weight:700;margin-bottom:14px;">Sign in</div>
+            <h1 style="margin:0;font-family:'Newsreader',Georgia,serif;font-weight:500;font-size:30px;line-height:1.12;letter-spacing:-0.5px;color:#211A14;">Here&rsquo;s your secure link.</h1>
+            <div style="font-family:'Hanken Grotesk',Arial,sans-serif;font-size:15px;line-height:1.65;color:#4A4036;margin-top:16px;">
+              Tap below to sign in to your Meridian workspace. No password needed &mdash; this link works once and expires shortly.
+            </div>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 4px;"><tr>
+              <td style="background:#BD5A33;border-radius:999px;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 32px;font-family:'Hanken Grotesk',Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;">Sign in to Meridian &rarr;</a>
+              </td>
+            </tr></table>
+            <div style="font-family:'Newsreader',Georgia,serif;font-style:italic;font-size:14px;color:#6E6357;line-height:1.5;margin-top:14px;">
+              Didn&rsquo;t request this? You can safely ignore this email &mdash; your account stays secure.
+            </div>
+          </td></tr>
+          <tr><td style="padding:30px 36px 28px;">
+            <div style="border-top:1px solid #E4DCCF;padding-top:18px;font-family:'Hanken Grotesk',Arial,sans-serif;font-size:12px;line-height:1.6;color:#938878;">
+              Meridian Studio — confidential academic support. You&rsquo;re receiving this because someone requested a sign-in link for this address.
+              <div style="margin-top:10px;"><a href="https://wa.me/12057279363" style="color:#BD5A33;text-decoration:none;font-weight:600;">Message us on WhatsApp</a></div>
+            </div>
+          </td></tr>
+        </table>
+        <div style="font-family:'Hanken Grotesk',Arial,sans-serif;font-size:11px;color:#A89E90;margin-top:16px;">&copy; 2026 Meridian Studio &nbsp;·&nbsp; Academic partners, est. 2019</div>
+      </td></tr>
+    </table>
+  </body>
+</html>

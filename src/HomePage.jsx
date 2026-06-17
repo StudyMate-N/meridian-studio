@@ -22,16 +22,7 @@ async function callAI(prompt) {
   return text
 }
 
-const SAMPLE_RUBRIC = `NURS 8302 — DNP Capstone Project Proposal
-Walden University · Doctor of Nursing Practice
-
-Assignment: Develop a 12–15 page evidence-based practice proposal addressing a
-clinical problem in a behavioral-health setting. Include: problem statement, PICOT
-question, literature synthesis (minimum 10 peer-reviewed sources, last 5 years),
-proposed intervention, and an evaluation plan.
-
-Format: APA 7th edition, double-spaced, level-1 and level-2 headings required.
-Due: in 6 days (Sunday 11:59 PM). Submit via Turnitin (similarity must be <15%).`
+const SAMPLE_RUBRIC = `NURS 8302 — DNP Capstone Proposal (Walden University). Develop a 12–15 page evidence-based practice proposal for a behavioral-health clinical problem. Include a problem statement, PICOT question, literature synthesis (minimum 10 peer-reviewed sources from the last 5 years), proposed intervention and evaluation plan. APA 7th edition, level-1 and level-2 headings. Due in 6 days. Submit via Turnitin, similarity under 15%.`
 
 // ── ICONS ─────────────────────────────────────────────────────────────────────
 const Ico = {
@@ -42,11 +33,20 @@ const Ico = {
   loop:    (p) => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>,
   shield:  (p) => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>,
   users:   (p) => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/><circle cx="9" cy="7" r="3.2"/><path d="M22 19v-1a4 4 0 0 0-3-3.8M16 4.2A3.2 3.2 0 0 1 16 10.4"/></svg>,
+  user:    (p) => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M5 20a7 7 0 0 1 14 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>,
+  clock:   (p) => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>,
   compass: (p) => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5"/></svg>,
   seal:    (p) => <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M12 2l2.4 1.8 3-.2 1 2.8 2.4 1.7-.9 2.9.9 2.9-2.4 1.7-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3.2 16l.9-2.9-.9-2.9 2.4-1.7 1-2.8 3 .2z"/><polyline points="9 12 11 14 15 10"/></svg>,
+  sealc:   (p) => <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M9 12l2 2 4-4M12 3l7 2.6v5.4c0 4.2-3 7.2-7 9-4-1.8-7-4.8-7-9V5.6z"/></svg>,
   wa:      (p) => <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" focusable="false" {...p}><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1c-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.7-1-2.3c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.5.3-.7.3-1.4.2-1.5-.1-.1-.3-.2-.6-.3M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.4.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2"/></svg>,
   spark:   (p) => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M12 3v3M12 18v3M5 12H2M22 12h-3M6.3 6.3 4.5 4.5M19.5 19.5l-1.8-1.8M6.3 17.7 4.5 19.5M19.5 4.5l-1.8 1.8"/><circle cx="12" cy="12" r="3.2"/></svg>,
+  sparkF:  (p) => <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false" {...p}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>,
   upload:  (p) => <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M12 16V4M7 9l5-5 5 5"/></svg>,
+  refresh: (p) => <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M20 11a8 8 0 0 0-14-4M4 5v3h3M4 13a8 8 0 0 0 14 4M20 19v-3h-3"/></svg>,
+  chev:    (p) => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><path d="M9 6l6 6-6 6"/></svg>,
+  play:    (p) => <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true" focusable="false" {...p}><path d="M8 5v14l11-7z"/></svg>,
+  copy:    (p) => <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+  lock:    (p) => <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}><rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>,
 }
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
@@ -57,20 +57,20 @@ const DISCIPLINES = [
 ]
 
 const LEVELS = [
-  { id: 'ug',  badge: 'UG',  name: 'Undergraduate',       dg: "Associate · Bachelor's",      rate: 14, proj: null },
-  { id: 'ms',  badge: 'MS',  name: "Master's",            dg: 'MA · MS · MBA · MSN',          rate: 19, proj: null },
-  { id: 'adv', badge: 'ADV', name: 'Advanced / Pro',      dg: 'NP · JD · PsyD · Specialist',  rate: 23, proj: 26  },
-  { id: 'dnp', badge: 'DOC', name: 'Doctoral · Practice', dg: 'DNP · EdD · Capstone',         rate: 27, proj: 31  },
-  { id: 'phd', badge: 'PHD', name: 'Doctoral · Research', dg: 'PhD · Dissertation',           rate: 30, proj: 36  },
+  { id: 'ug',  badge: 'UG',  name: 'Undergraduate',       dg: "Associate · Bachelor's",      sub: 'Undergrad',       rate: 14, proj: null },
+  { id: 'ms',  badge: 'MS',  name: "Master's",            dg: 'MA · MS · MBA · MSN',          sub: "Master's",        rate: 19, proj: null },
+  { id: 'adv', badge: 'ADV', name: 'Advanced / Pro',      dg: 'NP · JD · PsyD · Specialist',  sub: 'NP / JD / PsyD',  rate: 23, proj: 26  },
+  { id: 'dnp', badge: 'DOC', name: 'Doctoral · Practice', dg: 'DNP · EdD · Capstone',         sub: 'DNP / EdD',       rate: 27, proj: 31  },
+  { id: 'phd', badge: 'PHD', name: 'Doctoral · Research', dg: 'PhD · Dissertation',           sub: 'Research',        rate: 30, proj: 36  },
 ]
 
 const SCOPES = [
-  { id: 'one',    label: 'One assignment',     bundle: 0,  lo: 3,   hi: 8,   def: 5,   proj: false },
-  { id: 'course', label: 'A full course',      bundle: 6,  lo: 18,  hi: 45,  def: 28,  proj: false },
-  { id: 'term',   label: 'A full term',        bundle: 9,  lo: 45,  hi: 90,  def: 60,  proj: false },
-  { id: 'cap',    label: 'Capstone / thesis',  bundle: 0,  lo: 60,  hi: 120, def: 80,  proj: true  },
-  { id: 'diss',   label: 'Dissertation',       bundle: 0,  lo: 150, hi: 250, def: 180, proj: true  },
-  { id: 'prog',   label: 'Your whole program', bundle: 15, lo: 120, hi: 300, def: 180, proj: false },
+  { id: 'one',    label: 'One assignment',     short: 'One assignment',  bundle: 0,  lo: 3,   hi: 8,   def: 5,   proj: false },
+  { id: 'course', label: 'A full course',      short: 'Full course',     bundle: 6,  lo: 18,  hi: 45,  def: 28,  proj: false },
+  { id: 'term',   label: 'A full term',        short: 'Full term',       bundle: 9,  lo: 45,  hi: 90,  def: 60,  proj: false },
+  { id: 'cap',    label: 'Capstone / thesis',  short: 'Capstone / thesis', bundle: 0, lo: 60, hi: 120, def: 80,  proj: true  },
+  { id: 'diss',   label: 'Dissertation',       short: 'Dissertation',    bundle: 0,  lo: 150, hi: 250, def: 180, proj: true  },
+  { id: 'prog',   label: 'Your whole program', short: 'Whole program',   bundle: 15, lo: 120, hi: 300, def: 180, proj: false },
 ]
 
 const DEADLINES = [
@@ -79,62 +79,101 @@ const DEADLINES = [
   { id: 'rush',     label: 'Rush',     sub: '24–48 hrs',  mult: 1.35 },
 ]
 
-const CITATIONS = ['APA 7', 'MLA 9', 'Chicago', 'Harvard', 'Other / not sure']
+const CITATIONS = ['APA 7', 'MLA', 'Harvard', 'Chicago', 'AMA', 'IEEE', 'Vancouver', 'OSCOLA', 'Turabian']
+
+// AI-intake deadline → fixed bucket (≤2d rush ×1.6, ≤7d standard ×1.15, else relaxed ×1.0)
+const INTAKE_EXAMPLES = [
+  'DNP capstone, 12 pages, APA 7, due in 6 days',
+  'MBA strategy report, 8 pages, Harvard, 2 weeks',
+  'Undergrad psychology essay, 5 pages, APA',
+]
 
 const HOW = [
-  { n: '01', t: 'Tell us your', it: 'goal.',    b: 'Pick your level, discipline, and scope — from a single assignment to a full dissertation. Share the rubric. Your estimate appears instantly.', meta: 'Under a minute' },
-  { n: '02', t: 'Meet your',    it: 'expert.',  b: 'We match you with a vetted specialist who holds a degree in your field. They confirm the plan and lock your quote — no surprise add-ons.', meta: 'Confirmed in 4 hours' },
-  { n: '03', t: 'Learn &',      it: 'submit.',  b: 'Get model work, edits, and guidance you can actually understand and build on. Unlimited revisions until you\'re confident. Delivered before deadline.', meta: 'Always before deadline' },
+  { n: '01', icon: 'spark', t: 'Tell us your goal',  b: 'Paste your rubric or describe it in a sentence. Pick your level, discipline and scope — our intake reader scopes it instantly.', tag: 'Under a minute', img: '/meridian/how-1.png', alt: 'A warm desk with notebook and study lamp' },
+  { n: '02', icon: 'user',  t: 'Meet your scholar',  b: 'We match you to a vetted specialist with an advanced degree in your exact field. They analyse the guidelines and lock your flat quote.', tag: 'Estimate in 30 min – 2 hrs', img: '/meridian/how-2.png', alt: 'A study desk seen over the shoulder' },
+  { n: '03', icon: 'check',  t: 'Learn & defend',     b: 'Receive drafts, detailed revisions and structural guidance you can learn from — with AI & similarity reports, before your deadline.', tag: 'Always before deadline', img: '/meridian/how-3.png', alt: 'A finished paper with a wax seal' },
+]
+
+const TRUST_STATS = [
+  { n: '12k+', l: 'Briefs delivered' },
+  { n: '4.9',  l: 'Average rating' },
+  { n: '96%',  l: 'Delivered on time' },
+  { n: '200+', l: 'Vetted experts' },
 ]
 
 const OLD_WAY = [
-  'Anonymous page-mills who vanish after payment',
-  'Generic AI output anyone could generate for free',
-  "Work you can't explain — and can't defend",
-  "One-size copy, no idea who actually wrote it",
+  { b: 'Anonymous content mills', t: ' — you never know who is writing or whether they hold any real qualification.' },
+  { b: 'Generic AI templates', t: " — easily flagged by Turnitin's AI classifiers and rejected outright." },
+  { b: "Work you can't defend", t: " — an isolated paper you can't explain, leaving you exposed in an oral defence." },
+  { b: 'Transaction, not partnership', t: ' — ghosted after payment, with no real revision path.' },
 ]
 
 const NEW_WAY = [
-  'A named, degree-holding expert in your exact field',
-  'Coaching, editing & research you learn from',
-  "Original, integrity-screened work that's yours to own",
-  'A partner for one paper — or your whole program',
+  { b: 'Named, credentialed scholars', t: ' — hand-matched specialists with real advanced degrees in your exact discipline.' },
+  { b: 'Interactive learning model', t: ' — edits, model work and coaching so you internalise the material.' },
+  { b: 'Dual-layer integrity checks', t: ' — every deliverable ships with plagiarism + AI-detection reports.' },
+  { b: 'Continuous program partner', t: ' — the same expert stays with you across chapters and terms.' },
 ]
 
-const ASSURE = [
-  { ic: 'users',   t: 'Same expert, every time',       b: 'You keep the one specialist who knows your field, your school, and your standards — across a single paper or your entire program. Continuity is the whole advantage.' },
-  { ic: 'loop',    t: 'Revisions until you\'re sure',  b: "Free, unlimited revisions within scope. We refine until the work is something you fully understand and would happily defend." },
-  { ic: 'shield',  t: 'Original & integrity-first',    b: 'Every deliverable is screened for plagiarism and AI-generation, and you get the report with it. Support that holds up to any scrutiny.' },
-  { ic: 'compass', t: "You'll understand every line",  b: "We walk you through the work in plain language so you can explain and defend it yourself. That's the point — you leave more capable, not more dependent." },
+const GUARDS = [
+  { ic: 'users',  t: 'Same expert, every brief',    b: "You keep the same designated specialist who knows your voice, your school's rubric and your standards — total program continuity." },
+  { ic: 'shield', t: 'Original & integrity-first',  b: 'Every draft is scanned for plagiarism and AI footprinting. You get the official report showing 0% AI use before final delivery.' },
+  { ic: 'clock',  t: 'The on-time pledge',          b: 'We agree deadlines up front. If we are late by even one minute, your next engagement is completely free. No questions asked.' },
+  { ic: 'sealc',  t: 'Complete understanding',      b: "We don't just deliver pages — we walk you through every sentence and method so you can confidently explain and defend your work." },
 ]
 
-const OUTCOMES = [
-  { n: '4.9★', l: 'Average student rating' },
-  { n: '98%',  l: 'Delivered before deadline' },
-  { n: '100%', l: 'Briefs reviewed personally' },
-  { n: '40+',  l: 'Disciplines covered' },
+const EST_CHECKS = [
+  '50% deposit to begin · 50% on final approval',
+  'Zero surprises: the locked rate never increases',
+  'Includes integrity report & Turnitin screen',
 ]
 
 const TESTI = [
-  { q: ['Three weeks from my capstone defense I was drowning. My expert didn\'t just hand me a paper — they ', { hl: 'walked me through the methodology' }, ' until I could defend every line. I passed with distinction.'], nm: 'Dana R.', dg: 'DNP Candidate · Capella', av: 'D' },
-  { q: ['Honestly, I assumed this was just another essay-mill and nearly closed the tab. Two drafts in, my expert was explaining ', { hl: 'my own methodology better than I could' }, '. I stopped doubting — my GPA went 3.1 to 3.8.'], nm: 'Marcus L.', dg: 'MBA · Walden', av: 'M' },
-  { q: ['English is my second language and grad school felt impossible. They helped me ', { hl: 'find my own academic voice' }, ' instead of replacing it — my advisor called my last paper my strongest yet.'], nm: 'Priya S.', dg: 'MSW · Online', av: 'P' },
+  { q: 'My expert understood my DNP capstone better than my own advisor. Delivered early, zero AI flags, and I could defend every line.', nm: 'Grace M.', dg: "Master's, Nursing", av: 'GM', avBg: 'var(--accent)' },
+  { q: 'I was drowning before finals. The same person stayed with me through three revisions — like a tutor who genuinely cared.', nm: 'Daniel O.', dg: 'MSc, Economics', av: 'DO', avBg: '#3C6699' },
+  { q: 'The originality and AI reports gave me total peace of mind. Rigorous, sourced, and on time.', nm: 'Priya N.', dg: 'MBA', av: 'PN', avBg: '#0F7E84' },
 ]
 
-const EXPERTS = [
-  { nm: 'Dr. A. Mensah',  fl: 'Psychiatric Nursing',   deg: 'PhD'  },
-  { nm: 'Dr. L. Okonkwo', fl: 'Business Strategy',     deg: 'DBA'  },
-  { nm: 'M. Hartley',     fl: 'Educational Research',  deg: 'EdD'  },
-  { nm: 'Dr. S. Reyes',   fl: 'Clinical Psychology',   deg: 'PsyD' },
+// Vetted-experts specialty selector → matched profile card
+const SPECIALTIES = [
+  { key: 'nursing',    label: 'Nursing & Health Sciences',   initials: 'HC', avBg: 'var(--accent)', name: 'Dr. Helen G. Carter, PhD, DNP', degree: 'PhD in Nursing Research · DNP, Psychiatric Mental Health', rating: '4.95', briefs: '148', bg: 'Over 12 years of nursing practice and capstone mentorship. Specialises in psychiatric nursing methodology, evidence-based project designs and clinical research critique.', institution: 'Vanderbilt University', format: 'APA 7 expert' },
+  { key: 'business',   label: 'Business, Finance & MBA',     initials: 'JR', avBg: '#3C6699', name: 'Prof. Jonathan Reed, DBA', degree: 'DBA in Strategy · MBA, Corporate Finance', rating: '4.92', briefs: '131', bg: 'Former business-school faculty. Turns ambiguous prompts into defensible, well-argued strategy and finance analysis with rigorous sourcing.', institution: 'London Business School', format: 'APA 7 · Harvard' },
+  { key: 'education',  label: 'Education & EdD',             initials: 'MA', avBg: '#0F7E84', name: 'Dr. Maria Alvarez, PhD, EdD', degree: 'PhD in Education · EdD, Curriculum & Instruction', rating: '4.90', briefs: '119', bg: 'Mixed-methods specialist focused on teacher professional development and program evaluation. Meticulous with dissertation methodology chapters.', institution: 'Columbia Teachers College', format: 'APA 7 expert' },
+  { key: 'psychology', label: 'Psychology & Social Work',    initials: 'SO', avBg: '#7A4DA0', name: 'Dr. Samuel Okoye, PhD, MSW', degree: 'PhD in Clinical Psychology · MSW', rating: '4.88', briefs: '104', bg: 'CBT outcomes researcher and academic editor. Strong on psychometrics, ethics and applied social-work practice frameworks.', institution: 'University of Michigan', format: 'APA 7 expert' },
+  { key: 'data',       label: 'Data & Statistics (SPSS / R)', initials: 'LC', avBg: '#9E4825', name: 'Dr. Lena Chachoute, PhD', degree: 'PhD in Public Health · Biostatistics', rating: '4.93', briefs: '156', bg: 'Epidemiology researcher and statistician. SPSS and R specialist for regression, modelling and PRISMA-guided systematic reviews.', institution: 'Johns Hopkins University', format: 'APA 7 expert' },
 ]
 
 const FAQ = [
-  { q: 'Is using Meridian allowed?', a: 'Academic support has always existed — writing centres, tutors, study groups. Meridian is simply a more expert, more accountable version of that. You\'re not outsourcing your brain; you\'re getting a subject-matter expert in your corner. We screen everything for originality and never hand over work you couldn\'t stand behind and explain yourself.' },
-  { q: 'What subjects and levels do you cover?', a: 'All of them. Our network spans 40+ disciplines — nursing and health sciences, business, psychology, education, engineering, computer science, law, social work and more — from undergraduate assignments to PhD dissertations. If we can\'t match you with a true specialist, we\'ll tell you up front.' },
-  { q: 'Who actually does the work?', a: 'A vetted expert who holds an advanced degree in your specific field. Every writer passes credential verification, a discipline test, and APA/MLA/Chicago proficiency checks. You keep the same expert across a course or program so they know your standards.' },
-  { q: 'How fast can you turn things around?', a: 'We confirm your quote within four hours. Standard delivery runs 3–7 days depending on scope; rush options can deliver in as little as 24 hours. Whatever we agree, it lands before your deadline — guaranteed.' },
-  { q: 'How does payment work?', a: 'Fifty percent to begin, fifty percent on delivery once you\'ve reviewed the work. No subscriptions, no hidden fees, and the quote we lock is the price you pay.' },
-  { q: 'Is it really confidential?', a: "Completely. We never share your identity or your school's. Uploads are encrypted, billing is discreet, and every team member is bound by a strict confidentiality agreement." },
+  { q: 'Is this allowed at my school?', a: "Meridian provides coaching, editing and model research support — the same kind of help a writing center or private tutor offers. Our work is built to learn from and to defend as your own understanding; always follow your school's policies on outside assistance." },
+  { q: 'Will it be flagged as AI?', a: 'Every deliverable is written by a human expert — never machine-generated — and ships with an AI-detection and originality report, so you can see the results yourself before you submit.' },
+  { q: 'Do I get the same expert throughout?', a: "Yes. You're matched once to a specialist in your field and they stay with you through drafts, revisions and delivery — no rotating freelancers." },
+  { q: 'How does payment work?', a: 'A 50% deposit starts the work; the balance is due on delivery. Your estimate is transparent up front and an expert confirms scope before you pay.' },
+  { q: 'How fast can you deliver?', a: 'As fast as 24–48 hours for shorter work. Scope your assignment above and the deadline you choose is reflected in the price.' },
+]
+
+// Footer columns mirror the design prototype exactly: Product / Company / Legal,
+// with the prototype's link labels. Product links point at homepage anchors; the
+// Company/Legal info links now resolve to real client routes (see src/InfoPage.jsx
+// + the routes wired in App.jsx). A null target falls back to the concierge.
+const FOOT_COLS = [
+  { head: 'Product', links: [
+    ['#how', 'How it works'],
+    ['#coverage', 'Pricing'],
+    ['#experts', 'Meet the experts'],
+    ['#apply', 'Become an expert'],
+  ] },
+  { head: 'Company', links: [
+    ['/getting-started', 'About'],
+    ['/integrity', 'Integrity policy'],
+    ['/contact', 'Contact'],
+    ['#apply', 'Careers'],
+  ] },
+  { head: 'Legal', links: [
+    ['/terms', 'Terms'],
+    ['/privacy', 'Privacy'],
+    ['/refund', 'Refund policy'],
+    ['/confidentiality', 'Confidentiality'],
+  ] },
 ]
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -154,9 +193,13 @@ function useReveal() {
 }
 
 function money(n) { return '$' + (Math.round(n / 10) * 10).toLocaleString() }
+function moneyExact(n) { return '$' + Math.round(n).toLocaleString('en-US') }
 
-const STRIPE = {
-  backgroundImage: 'repeating-linear-gradient(135deg, var(--paper-3) 0 11px, var(--paper-2) 11px 22px)',
+// Opens the floating Concierge (same hook the floating "Ask Meridian" button uses);
+// falls back to WhatsApp if the widget hasn't mounted yet.
+function openConcierge() {
+  if (window.MeridianOpenConcierge) window.MeridianOpenConcierge()
+  else window.open(`https://wa.me/${WA_NUM}`, '_blank')
 }
 
 // ── BRAND ─────────────────────────────────────────────────────────────────────
@@ -166,180 +209,434 @@ function Brand() {
       <span className="mk" aria-hidden="true">M</span>
       <span className="wm">
         <span className="nm">Meridian Studio</span>
-        <span className="tg">Academic partners · Est. 2019</span>
+        <span className="tg">Academic Partners · Est. 2019</span>
       </span>
     </a>
   )
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
-function Nav({ onBrief }) {
+function Nav({ onBrief, onScope }) {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8)
+    const onScroll = () => setScrolled(window.scrollY > 16)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
   useEffect(() => { document.body.style.overflow = open ? 'hidden' : '' }, [open])
-  const links = [['#how','How it works'],['#pricing','Pricing'],['#disciplines','Disciplines'],['#assurance','Our promise'],['#experts','Experts']]
+  const links = [['#how', 'How it works'], ['#coverage', 'Pricing'], ['#experts', 'Experts'], ['#faq', 'FAQ']]
   const close = () => setOpen(false)
   return (
     <header className={'nav' + (scrolled ? ' scrolled' : '')} role="banner">
       <div className="wrap nav-inner">
         <Brand />
+        <div className="nav-spacer" />
         <nav className="nav-links" aria-label="Primary">
-          {links.map(([h, l]) => <a key={h} href={h}>{l}</a>)}
+          {links.map(([h, l]) => <a key={h} href={h} className="v2-link">{l}</a>)}
         </nav>
-        <div className="nav-right">
-          <a href="/workspace" className="signin">Sign in</a>
-          <button className="btn btn-accent" onClick={() => onBrief()}>
-            Start your brief {Ico.arrow()}
-          </button>
-          <button
-            className={'burger' + (open ? ' open' : '')}
-            aria-label="Menu" aria-expanded={open}
-            onClick={() => setOpen(o => !o)}
-          >
-            <span></span><span></span><span></span>
-          </button>
-        </div>
-      </div>
-      <div className={'mobile-menu' + (open ? ' open' : '')}>
-        {links.map(([h, l]) => <a key={h} href={h} onClick={close}>{l}</a>)}
-        <a href="#apply" onClick={close}>Write for us</a>
-        <a href="/workspace" onClick={close}>Sign in</a>
+        <a href="/workspace" className="signin nav-links-only">Sign in</a>
+        <button type="button" className="nav-ask nav-links-only"
+          aria-label="Ask Meridian — open the concierge" onClick={openConcierge}>
+          {Ico.sparkF()} Ask Meridian
+        </button>
+        <button type="button" className="btn btn-accent nav-cta"
+          aria-label="Scope my work — open the intake" onClick={() => onScope()}>
+          Scope my work {Ico.arrow()}
+        </button>
         <button
-          className="btn btn-accent btn-lg m-cta"
-          onClick={() => { close(); onBrief() }}
-          style={{ display: 'inline-flex' }}
+          type="button"
+          className={'burger' + (open ? ' open' : '')}
+          aria-label="Menu" aria-expanded={open}
+          onClick={() => setOpen(o => !o)}
         >
-          Start your brief {Ico.arrow()}
+          <span></span><span></span><span></span>
         </button>
       </div>
+      {open && (
+        <div className="nav-drawer">
+          {links.map(([h, l]) => <a key={h} href={h} onClick={close}>{l}</a>)}
+          <a href="/workspace" onClick={close} className="strong">Sign in</a>
+          <button type="button" className="nav-ask drawer-ask"
+            onClick={() => { close(); openConcierge() }}>{Ico.spark()} Ask Meridian</button>
+          <button type="button" className="btn btn-accent btn-lg drawer-cta"
+            onClick={() => { close(); onScope() }}>Scope my work {Ico.arrow()}</button>
+        </div>
+      )}
     </header>
   )
 }
 
-// ── HERO ──────────────────────────────────────────────────────────────────────
-function Hero({ onBrief }) {
+// ── HERO + AI INTAKE CONSOLE ────────────────────────────────────────────────────
+function Hero({ onBrief, intakeRef }) {
+  // states: 'input' | 'busy' | 'result'
+  const [stage, setStage] = useState('input')
+  const [text, setText] = useState('')
+  const [err, setErr] = useState('')
+  const [scope, setScope] = useState(null)   // { discipline, level, scope, pages, citation, deadline, requirements[] }
+  const [placeholder, setPlaceholder] = useState(INTAKE_EXAMPLES[0])
+  const [toast, setToast] = useState('')
+  const taRef = useRef(null)
+  const toastTimer = useRef(null)
+  const liveCount = useMemo(() => 23 + (new Date().getHours() % 7), [])
+
+  // Animated typewriter placeholder — mirrors the design's tickPlaceholder (55ms/char).
+  // Only runs while the field is empty and we're on the input stage (not busy/result).
+  useEffect(() => {
+    if (stage !== 'input' || text) return
+    const list = INTAKE_EXAMPLES.concat(['PhD dissertation chapter, 20 pages, Chicago, 3 weeks'])
+    let phI = 0, phChar = 0, phDel = false, phPause = 8
+    const tick = () => {
+      const full = list[phI % list.length]
+      if (phPause > 0) { phPause--; setPlaceholder(full + '▋'); return }
+      if (!phDel) {
+        phChar++; setPlaceholder(full.slice(0, phChar) + '▋')
+        if (phChar >= full.length) { phDel = true; phPause = 30 }
+      } else {
+        phChar--; setPlaceholder(full.slice(0, phChar) + '▋')
+        if (phChar <= 0) { phDel = false; phI++; phPause = 5 }
+      }
+    }
+    const id = setInterval(tick, 55)
+    return () => clearInterval(id)
+  }, [stage, text])
+
+  // Lightweight toast (auto-dismiss after 3.2s).
+  function showToast(msg) {
+    setToast(msg)
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(''), 3200)
+  }
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
+
+  // expose a focus hook for nav/final "Scope my work" buttons
+  useEffect(() => { if (intakeRef) intakeRef.current = () => {
+    const el = taRef.current
+    if (el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch {} setTimeout(() => el.focus(), 350) }
+  } }, [intakeRef])
+
+  function computeScope(j) {
+    const level = LEVELS.find(l => l.id === j.level) || LEVELS[1]
+    const sc = SCOPES.find(s => s.id === j.scope) || SCOPES[0]
+    const useProj = sc.proj && level.proj != null
+    const baseRate = useProj ? level.proj : level.rate
+    // intake deadline multiplier: ≤2d ×1.6 / ≤7d ×1.15 / else ×1.0
+    const days = Number.isFinite(j.days) ? j.days : (j.deadline === 'rush' ? 2 : j.deadline === 'standard' ? 5 : 14)
+    const mult = days <= 2 ? 1.6 : (days <= 7 ? 1.15 : 1.0)
+    const pages = Math.max(1, Math.min(400, Number(j.pages) || sc.def))
+    const perPage = Math.round(baseRate * mult)
+    const estimate = Math.round(pages * baseRate * mult)
+    const deadlineId = days <= 2 ? 'rush' : (days <= 7 ? 'standard' : 'relaxed')
+    return {
+      discipline: j.discipline || 'General studies',
+      level: level.id, levelName: level.name,
+      scope: sc.id, scopeName: sc.label,
+      pages, citation: j.citation || 'APA 7', days, deadlineId,
+      deadlineLabel: days <= 1 ? 'in 24 hours' : (days <= 2 ? 'in 2 days' : (days >= 21 ? ('in ~' + Math.round(days / 7) + ' weeks') : 'in ' + days + ' days')),
+      perPage, estimate,
+      requirements: Array.isArray(j.requirements) ? j.requirements.slice(0, 4) : [],
+    }
+  }
+
+  async function scopeIt(srcText) {
+    const src = (typeof srcText === 'string' ? srcText : text).trim()
+    if (src.length < 8) { setErr('Add a sentence about your assignment — your level, length and deadline help most.'); return }
+    setErr(''); setStage('busy')
+    const prompt = `You are the intake assistant for Meridian Studio, an academic support service. Read the assignment brief below and return ONLY a JSON object (no prose, no markdown fences) with these keys:
+"title": short descriptive title (max 8 words),
+"discipline": one of ${JSON.stringify(DISCIPLINES)} — closest match,
+"level": one of "ug","ms","adv","dnp","phd",
+"scope": one of "one","course","term","cap","diss","prog",
+"pages": integer page estimate (convert ~275 words = 1 page if only word count given; if a range, use the midpoint; else null),
+"citation": one of "APA 7","MLA","Harvard","Chicago","AMA","IEEE","Vancouver","OSCOLA","Turabian" — closest match, default "APA 7",
+"deadline_days": integer number of days until due (if "rush"/24-48h use 2, if within a week use 5, if 10+ days or unstated use 14),
+"requirements": array of up to 4 short strings capturing the most important instructions.
+
+BRIEF:
+"""${src.slice(0, 6000)}"""`
+    try {
+      const res = await callAI(prompt)
+      const j = JSON.parse(res.slice(res.indexOf('{'), res.lastIndexOf('}') + 1))
+      j.days = Number.isFinite(j.deadline_days) ? j.deadline_days : undefined
+      setScope({ ...computeScope(j), title: j.title || '' })
+      setStage('result')
+    } catch (e) {
+      setErr("We couldn't read enough to scope this yet. Add your level, page count and deadline — e.g. “Master's nursing essay, 8 pages, APA, due in 1 week” — or ask our concierge.")
+      setStage('input')
+    }
+  }
+
+  function patch(p) {
+    setScope(prev => {
+      const next = { ...prev, ...p }
+      // recompute pricing from edited facts
+      return computeScope({
+        discipline: next.discipline, level: next.level, scope: next.scope,
+        pages: next.pages, citation: next.citation, days: next.days,
+        requirements: next.requirements,
+      })
+    })
+  }
+
+  function startBrief() {
+    if (!scope) return
+    onBrief({
+      levelId: scope.level, scopeId: scope.scope, pages: scope.pages,
+      dlId: scope.deadlineId, text,
+      title: scope.title, discipline: scope.discipline, citation: scope.citation,
+      requirements: scope.requirements,
+    })
+  }
+
+  // Concierge "Adjust"/"Tweak in the scoper": load a scoped result into this
+  // scoper, show it as a result, and scroll the intake into view.
+  useEffect(() => {
+    const load = (pre) => {
+      if (!pre) return
+      const computed = computeScope({
+        discipline: pre.discipline, level: pre.level, scope: pre.scope,
+        pages: pre.pages, citation: pre.citation,
+        days: Number.isFinite(pre.days) ? pre.days : undefined,
+        deadline: pre.deadlineId,
+        requirements: pre.requirements,
+      })
+      setScope({ ...computed, title: pre.title || '' })
+      setStage('result')
+      requestAnimationFrame(() => {
+        const el = taRef.current
+        if (el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch {} }
+      })
+    }
+    window.MeridianScopeResult = load
+    return () => { if (window.MeridianScopeResult === load) delete window.MeridianScopeResult }
+  }, [])
+
   return (
     <section className="hero" id="top" aria-labelledby="hero-h">
+      <div className="hero-glow" aria-hidden="true" />
       <div className="wrap hero-grid">
         <div className="hero-left reveal">
-          <div className="kicker hero-eyebrow"><span className="bar"></span>Academic support for a new era</div>
+          <div className="hero-eyebrow">Academic support for a new era</div>
           <h1 id="hero-h">
-            Your field.<br />Your level.<br />An expert who <span className="italic u">knows it.</span>
+            <span className="it">Your research.</span><br />
+            <span className="b">Your discipline.</span><br />
+            <span className="ac">An expert who knows it.</span>
           </h1>
           <p className="hero-lede">
-            Meridian pairs you with an <b>advanced-degree expert in your exact field</b> for
-            coaching, editing, and research support — across every discipline and degree level.
-            Real understanding. Work you can defend.
+            We pair graduate, doctoral and advanced-professional students with vetted,
+            degree-holding specialists in your exact field — structured coaching, expert
+            editing and research design. Original work you understand and can defend.
           </p>
-          <p className="hero-punch">Help that <span className="italic">holds up.</span></p>
           <div className="hero-ctas">
-            <a href="#pricing" className="btn btn-accent btn-lg">Get your estimate {Ico.arrow()}</a>
-            <button className="btn btn-ghost btn-lg" onClick={() => onBrief()}>Start your brief</button>
+            <button type="button" className="btn btn-ink btn-lg"
+              aria-label="Scope my work" onClick={() => taRef.current?.focus()}>
+              Scope my work {Ico.arrow()}
+            </button>
+            <button type="button" className="btn btn-ghost btn-lg"
+              onClick={() => (window.MeridianOpenConcierge ? window.MeridianOpenConcierge() : window.open(`https://wa.me/${WA_NUM}`, '_blank'))}>
+              {Ico.spark()} Ask the concierge
+            </button>
           </div>
-          <div className="hero-proof">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div className="rate">4.9</div>
-              <div>
-                <div className="stars" aria-label="4.9 out of 5">
-                  {[0,1,2,3,4].map(i => <span key={i}>{Ico.star()}</span>)}
-                </div>
-                <div className="small">Verified student reviews</div>
-              </div>
+          <div className="hero-stats">
+            <div className="hs">
+              <div className="hs-top"><span className="hs-n">4.9</span><span className="hs-stars">{[0,1,2,3,4].map(i => <span key={i}>{Ico.star({ width: 12, height: 12 })}</span>)}</span></div>
+              <div className="hs-l">Average student rating</div>
             </div>
-            <div className="vr" aria-hidden="true"></div>
-            <div className="small"><b style={{ color: 'var(--ink)', fontSize: '15px' }}>Same expert</b><br />start to finish</div>
-            <div className="vr" aria-hidden="true"></div>
-            <div className="small"><b style={{ color: 'var(--ink)', fontSize: '15px' }}>Every brief</b><br />personally reviewed</div>
+            <div className="hs">
+              <div className="hs-n ac">0%</div>
+              <div className="hs-l">AI generated · guaranteed</div>
+            </div>
+            <div className="hs">
+              <div className="hs-n">100%</div>
+              <div className="hs-l">On-time pledge</div>
+            </div>
           </div>
         </div>
 
-        <div className="hero-visual reveal" style={{ transitionDelay: '.1s' }}>
-          <div className="dossier">
-            <div className="d-top">
-              <span className="d-live"><span className="dot"></span>Live engagement</span>
-              <span>MS · file 04</span>
+        <div className="hero-visual reveal" style={{ transitionDelay: '.1s' }} id="intake">
+          <div className="intake">
+            <div className="intake-head">
+              <span className="ih-ic" aria-hidden="true">{Ico.sparkF({ width: 16, height: 16 })}</span>
+              <div className="ih-meta">
+                <div className="ih-t">Scope my work</div>
+                <div className="ih-s">Powered by Meridian AI</div>
+              </div>
+              {stage === 'result' && (
+                <button type="button" className="ih-new" onClick={() => { setScope(null); setErr(''); setStage('input') }}>
+                  {Ico.refresh()} New
+                </button>
+              )}
             </div>
-            <div className="d-title">DNP Capstone — Behavioral Health</div>
-            <div className="d-rows">
-              <div className="d-row"><span className="l">Matched expert</span><span className="v">Dr. A. Mensah · PhD</span></div>
-              <div className="d-row"><span className="l">Discipline</span><span className="v">Psychiatric Nursing</span></div>
-              <div className="d-row"><span className="l">Integrity screen</span><span className="v ok">Passed · 0% AI</span></div>
-              <div className="d-row"><span className="l">Status</span><span className="v ok">On track · 2 days early</span></div>
-            </div>
-            <div className="d-foot">
-              <span className="avp" aria-hidden="true"><span>A</span><span>L</span><span>S</span></span>
-              <span className="txt">Hand-matched to a specialist in your exact field — and they stay with you.</span>
-            </div>
+
+            {stage === 'input' && (
+              <div className="intake-body">
+                <textarea ref={taRef} className="intake-ta" rows={5} value={text}
+                  aria-label="Describe your assignment"
+                  placeholder={placeholder}
+                  onChange={e => { setText(e.target.value); setErr('') }} />
+                <div className="intake-examples">
+                  {INTAKE_EXAMPLES.map(ex => (
+                    <button type="button" key={ex} className="ex-chip" onClick={() => { setText(ex); setErr('') }}>{ex}</button>
+                  ))}
+                </div>
+                <div className="intake-actions">
+                  <button type="button" className="intake-scope" onClick={() => scopeIt()}>
+                    {Ico.sparkF({ width: 16, height: 16 })} Scope it
+                  </button>
+                  <button type="button" className="intake-upload" onClick={() => { setText(SAMPLE_RUBRIC); setErr(''); showToast("Sample rubric loaded — hit 'Scope it'") }}>
+                    {Ico.upload({ width: 17, height: 17 })} Upload rubric
+                  </button>
+                </div>
+                {err && <div className="intake-err" role="alert">{err}</div>}
+              </div>
+            )}
+
+            {stage === 'busy' && (
+              <div className="intake-body">
+                <div className="intake-loading">
+                  <span className="il-spin" aria-hidden="true" />
+                  <span className="il-t">Reading your brief…</span>
+                </div>
+                <div className="intake-shimmer">
+                  {['70%', '90%', '55%', '80%'].map((w, i) => <span key={i} style={{ width: w }} />)}
+                </div>
+              </div>
+            )}
+
+            {stage === 'result' && scope && (
+              <div className="intake-body intake-result">
+                <div className="ir-head">
+                  <span className="ir-check" aria-hidden="true">{Ico.sealc({ width: 18, height: 18 })}</span>
+                  Here's what we understood
+                </div>
+                <div className="ir-grid">
+                  <Fact k="Discipline"><input className="ir-edit" value={scope.discipline} onChange={e => patch({ discipline: e.target.value })} /></Fact>
+                  <Fact k="Level">
+                    <select className="ir-edit" value={scope.level} onChange={e => patch({ level: e.target.value })}>
+                      {LEVELS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                  </Fact>
+                  <Fact k="Scope">
+                    <select className="ir-edit" value={scope.scope} onChange={e => patch({ scope: e.target.value })}>
+                      {SCOPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                  </Fact>
+                  <Fact k="Length">
+                    <span className="ir-num"><input type="number" min="1" className="ir-edit" value={scope.pages}
+                      onChange={e => patch({ pages: parseInt(e.target.value, 10) || 1 })} /><span>pages</span></span>
+                  </Fact>
+                  <Fact k="Citation">
+                    <select className="ir-edit" value={scope.citation} onChange={e => patch({ citation: e.target.value })}>
+                      {CITATIONS.map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </Fact>
+                  <Fact k="Deadline">
+                    <select className="ir-edit" value={String(scope.days)} onChange={e => patch({ days: parseInt(e.target.value, 10) })}>
+                      {(() => {
+                        const base = [1, 3, 7, 14, 21, 30]
+                        const vals = base.indexOf(scope.days) < 0 ? [scope.days, ...base].sort((a, b) => a - b) : base
+                        const label = n => n === 1 ? '24 hours' : n >= 30 ? '1 month' : n >= 21 ? (Math.round(n / 7) + ' weeks') : n >= 14 ? '2 weeks' : (n + ' days')
+                        return vals.map(n => <option key={n} value={String(n)}>{label(n)}</option>)
+                      })()}
+                    </select>
+                  </Fact>
+                </div>
+                {scope.requirements.length > 0 && (
+                  <div className="ir-reqs">
+                    <div className="ir-reqs-h">Key requirements</div>
+                    {scope.requirements.map((r, i) => (
+                      <div className="ir-req" key={i}><span className="ir-req-ic">{Ico.check({ width: 14, height: 14 })}</span><span>{r}</span></div>
+                    ))}
+                  </div>
+                )}
+                <div className="ir-est">
+                  <div>
+                    <div className="ir-est-l">Estimate</div>
+                    <div className="ir-est-amt">from {moneyExact(scope.estimate)}</div>
+                    <div className="ir-est-pp">{moneyExact(scope.perPage)}/page · 50% deposit to start</div>
+                  </div>
+                  <button type="button" className="ir-start" onClick={startBrief}>Start this brief {Ico.arrow()}</button>
+                </div>
+                <div className="ir-foot">An expert confirms the final scope before you pay a cent.</div>
+              </div>
+            )}
           </div>
-          <div className="hero-badge">
-            <span className="seal" aria-hidden="true">{Ico.seal()}</span>
-            <div>
-              <div className="b-n">100%</div>
-              <div className="b-l">On-time guarantee</div>
-            </div>
+          <div className="intake-float" aria-hidden="true">
+            <span className="dot" /><span>{liveCount} students scoping now</span>
           </div>
+          {toast && <div className="intake-toast" role="status">{toast}</div>}
         </div>
       </div>
 
-      <Disciplines />
+      <Marquee />
     </section>
   )
 }
 
+function Fact({ k, children }) {
+  return (
+    <div className="ir-fact">
+      <div className="ir-fact-k">{k}</div>
+      {children}
+    </div>
+  )
+}
+
 // ── DISCIPLINES MARQUEE ───────────────────────────────────────────────────────
-function Disciplines() {
+function Marquee() {
   const items = [...DISCIPLINES, ...DISCIPLINES]
   return (
-    <div className="disc" id="disciplines" aria-label="Disciplines covered">
-      <div className="wrap disc-inner">
-        <div className="disc-label">Specialists across every field</div>
-        <div className="disc-mask">
-          <div className="disc-track">
-            {items.map((d, i) => (
-              <span className="it" key={i}><span className="d" aria-hidden="true"></span>{d}</span>
-            ))}
-          </div>
-        </div>
+    <div className="marq" id="disciplines" aria-label="Disciplines covered">
+      <div className="marq-track v2-marqfade">
+        {items.map((d, i) => (
+          <span className="marq-it" key={i}>{d}<span className="marq-dot" aria-hidden="true" /></span>
+        ))}
       </div>
     </div>
   )
 }
 
-// ── ERA ───────────────────────────────────────────────────────────────────────
-function Era() {
+// ── A NEW STANDARD · COMPARISON ─────────────────────────────────────────────────
+function Comparison() {
   return (
-    <section className="era" aria-labelledby="era-h">
+    <section className="sec cmp-sec" aria-labelledby="cmp-h">
       <div className="wrap">
-        <div className="era-head reveal">
-          <div className="kicker"><span className="bar"></span>A new standard</div>
-          <h2 id="era-h">Anyone can generate words.<br />We help you <span className="italic">earn the grade.</span></h2>
-          <p className="era-sub">
-            The era of anonymous essay-mills and copy-paste AI is over — schools see straight
-            through it, and so do you. The future of academic help is human, accountable, and
-            built to make you better. That's the only way we've ever worked.
-          </p>
+        <div className="cmp-head reveal">
+          <div className="kicker"><span className="bar" />A new standard</div>
+          <h2 id="cmp-h">Anyone can generate sentences.<br /><span className="italic">We help you earn the degree.</span></h2>
+          <p>The academic landscape has shifted. Schools use ultra-sensitive AI detectors, and advisors see straight through boilerplate. The era of anonymous essay mills is over — you need human expertise, peer-reviewed rigour and defensible logic.</p>
         </div>
-        <div className="era-cols reveal" style={{ transitionDelay: '.08s' }}>
-          <div className="era-col old">
-            <div className="col-tag"><span className="sq"></span>The old way</div>
+        <div className="cmp-grid reveal" style={{ transitionDelay: '.08s' }}>
+          <div className="cmp-card old">
+            <div className="cmp-tag">
+              <span className="cmp-eyebrow">The old way</span>
+              <span className="cmp-pill risk">High risk</span>
+            </div>
             <h3>Buy pages. Hope it passes.</h3>
-            <ul className="era-list">
-              {OLD_WAY.map((t, i) => <li key={i}><span className="mk">{Ico.x()}</span>{t}</li>)}
-            </ul>
+            <div className="cmp-list">
+              {OLD_WAY.map((x, i) => (
+                <div className="cmp-row" key={i}><span className="cmp-mk x" aria-hidden="true">✕</span><span><b>{x.b}</b>{x.t}</span></div>
+              ))}
+            </div>
           </div>
-          <div className="era-col new">
-            <div className="col-tag"><span className="sq"></span>The Meridian way</div>
+          <div className="cmp-card new">
+            <div className="cmp-tag">
+              <span className="cmp-eyebrow">The Meridian way</span>
+              <span className="cmp-pill ok">100% defensible</span>
+            </div>
             <h3>Partner with an expert. Own the work.</h3>
-            <ul className="era-list">
-              {NEW_WAY.map((t, i) => <li key={i}><span className="mk">{Ico.check()}</span>{t}</li>)}
-            </ul>
+            <div className="cmp-list">
+              {NEW_WAY.map((x, i) => (
+                <div className="cmp-row" key={i}><span className="cmp-mk ok" aria-hidden="true">✓</span><span><b>{x.b}</b>{x.t}</span></div>
+              ))}
+            </div>
           </div>
+        </div>
+        <div className="cmp-stats reveal">
+          {TRUST_STATS.map(s => (
+            <div className="cmp-stat" key={s.l}><div className="n">{s.n}</div><div className="l">{s.l}</div></div>
+          ))}
         </div>
       </div>
     </section>
@@ -348,177 +645,143 @@ function Era() {
 
 // ── HOW IT WORKS ──────────────────────────────────────────────────────────────
 function How() {
+  const videoRef = useRef(null)
+  const [muted, setMuted] = useState(true)
+  function toggleSound() {
+    const v = videoRef.current; if (!v) return
+    v.muted = !v.muted; setMuted(v.muted)
+    if (v.paused) { try { v.play() } catch {} }
+  }
   return (
     <section className="sec" id="how" aria-labelledby="how-h">
       <div className="wrap">
-        <div className="sec-head reveal">
+        <div className="how-head reveal">
           <div className="h-main">
-            <div className="kicker"><span className="bar"></span>How it works</div>
-            <h2 id="how-h">Three steps. <span className="italic">One less worry.</span></h2>
+            <div className="kicker"><span className="bar" />How it works</div>
+            <h2 id="how-h">From rubric to ready — <span className="italic">one expert, all the way.</span></h2>
           </div>
-          <p className="sec-lede">From first click to final submission, you always know exactly where things stand.</p>
+          <p className="how-lede">No bidding wars, no rotating freelancers. The AI scopes it; a real specialist owns it from first draft to delivery.</p>
+        </div>
+        <div className="how-film reveal">
+          <video ref={videoRef} src="/meridian/film.mp4" poster="/meridian/film-poster.png"
+            autoPlay muted loop playsInline />
+          <button type="button" className="how-film-overlay" onClick={toggleSound} aria-label={muted ? 'Tap for sound' : 'Mute'}>
+            <span className="hf-play"><span className="hf-play-btn">{Ico.play()}</span>How Meridian works · 30s</span>
+            <span className="hf-tag">{muted ? 'Tap for sound' : 'Sound on'}</span>
+          </button>
         </div>
         <div className="how-grid">
           {HOW.map((s, i) => (
-            <div className="how-step reveal" key={s.n} style={{ transitionDelay: `${i * 0.08}s` }}>
-              <div className="h-n">{s.n}</div>
-              <h3>{s.t} <span className="italic">{s.it}</span></h3>
-              <p>{s.b}</p>
-              <div className="h-meta"><span className="dot" aria-hidden="true"></span>{s.meta}</div>
+            <div className="how-card reveal v2-card" key={s.n} style={{ transitionDelay: `${i * 0.08}s` }}>
+              <div className="how-still"><img src={s.img} alt={s.alt} loading="lazy" /></div>
+              <div className="how-body">
+                <div className="how-top">
+                  <span className="how-n">{s.n}</span>
+                  <span className="how-ic" aria-hidden="true">{Ico[s.icon]({ width: 19, height: 19 })}</span>
+                </div>
+                <h3>{s.t}</h3>
+                <p>{s.b}</p>
+                <span className="how-tag">{Ico.clock({ width: 12, height: 12 })} {s.tag}</span>
+              </div>
             </div>
           ))}
-        </div>
-        <div className="how-bring reveal">
-          <span className="hb-label">All you bring</span>
-          <span className="hb-items">
-            <span>Your rubric or prompt</span><span className="hb-dot"></span>
-            <span>Your deadline</span><span className="hb-dot"></span>
-            <span>Your course details</span>
-          </span>
-          <span className="hb-note">Our intake reads the rest from your file.</span>
         </div>
       </div>
     </section>
   )
 }
 
-// ── CALCULATOR ────────────────────────────────────────────────────────────────
-function Calc({ onBrief }) {
+// ── TRANSPARENT ESTIMATOR ───────────────────────────────────────────────────────
+function Estimator({ onBrief }) {
   const [levelId, setLevelId] = useState('dnp')
   const [scopeId, setScopeId] = useState('cap')
-  const [pages, setPages] = useState(80)
-  const [dlId, setDlId] = useState('standard')
+  const [pages, setPages] = useState(15)
+  const [tlId, setTlId] = useState('standard')
   const level = useMemo(() => LEVELS.find(l => l.id === levelId), [levelId])
   const scope = useMemo(() => SCOPES.find(s => s.id === scopeId), [scopeId])
-  const dl = useMemo(() => DEADLINES.find(d => d.id === dlId), [dlId])
-  const lvlRef = useRef(null)
-  const scopeRef = useRef(null)
+  const tl = useMemo(() => DEADLINES.find(d => d.id === tlId), [tlId])
+
   const useProjRate = scope.proj && level.proj != null
-  const rate = useProjRate ? level.proj : level.rate
-  const calc = (pg) => rate * pg * dl.mult * (1 - scope.bundle / 100)
-  const total = calc(pages)
+  const baseRate = useProjRate ? level.proj : level.rate
+  const perPage = baseRate * tl.mult * (1 - scope.bundle / 100)
+  const pg = Math.max(1, Math.min(100, pages))
+  const total = perPage * pg
 
-  function pickScope(sc) { setScopeId(sc.id); setPages(sc.def) }
-
-  function radioKey(e, items, currentId, ref, onPick) {
-    const idx = items.findIndex(i => i.id === currentId)
-    let next = idx
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); next = (idx + 1) % items.length }
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); next = (idx - 1 + items.length) % items.length }
-    else return
-    onPick(items[next])
-    ref.current?.querySelectorAll('[role="radio"]')?.[next]?.focus()
+  function lock() {
+    // map the slider/timeline to the brief prefill (estimator timeline ids match DEADLINES)
+    onBrief({ levelId, scopeId, pages: pg, dlId: tlId })
   }
 
+  const tlNotes = { relaxed: '10+ days · −8%', standard: '3–7 days · base', rush: '24–48 hrs · +35%' }
+
   return (
-    <section className="calc" id="pricing" aria-labelledby="calc-h">
-      <div className="wrap">
-        <div className="sec-head reveal">
-          <div className="h-main">
-            <div className="kicker"><span className="bar"></span>Transparent estimate</div>
-            <h2 id="calc-h">See what your <span className="italic">support costs.</span></h2>
+    <section className="estim" id="coverage" aria-labelledby="estim-h">
+      <div className="estim-glow" aria-hidden="true" />
+      <div className="wrap estim-grid">
+        <div className="estim-left reveal">
+          <div className="kicker on-ink"><span className="bar" />Transparent estimator</div>
+          <h2 id="estim-h">No surprises.<br /><span className="italic">Locked rates only.</span></h2>
+          <p>Set your parameters for an honest estimate. Your final quote is reviewed by our team and locked before any work begins.</p>
+          <div className="estim-checks">
+            {EST_CHECKS.map((c, i) => (
+              <div className="estim-check" key={i}><span className="ec-ic">{Ico.check({ width: 16, height: 16 })}</span><span>{c}</span></div>
+            ))}
           </div>
-          <p className="sec-lede">An honest estimate up front — page count, deadline and all. No surprise add-ons; your final quote is locked before any work begins.</p>
         </div>
 
-        <div className="calc-grid">
-          <div className="calc-panel">
-            <div className="calc-block reveal">
-              <div className="cb-h" id="lvl-lbl"><span className="step">A —</span> Academic level</div>
-              <div className="lvl-grid" role="radiogroup" aria-labelledby="lvl-lbl" ref={lvlRef}>
-                {LEVELS.map(lv => {
-                  const on = lv.id === levelId
-                  return (
-                    <button key={lv.id} role="radio" aria-checked={on} tabIndex={on ? 0 : -1}
-                      className={'lvl-card' + (on ? ' on' : '')}
-                      onClick={() => setLevelId(lv.id)}
-                      onKeyDown={e => radioKey(e, LEVELS, levelId, lvlRef, lv2 => setLevelId(lv2.id))}>
-                      <span className="badge">{lv.badge}</span>
-                      <div className="nm">{lv.name}</div>
-                      <div className="dg">{lv.dg}</div>
-                      <div className="rt"><span>${lv.rate}/pg</span>{lv.proj && <span>· ${lv.proj}/pg project</span>}</div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="calc-block reveal" style={{ transitionDelay: '.06s' }}>
-              <div className="cb-h" id="scope-lbl"><span className="step">B —</span> Scope of support</div>
-              <div className="scope-grid" role="radiogroup" aria-labelledby="scope-lbl" ref={scopeRef}>
-                {SCOPES.map(sc => {
-                  const on = sc.id === scopeId
-                  return (
-                    <button key={sc.id} role="radio" aria-checked={on} tabIndex={on ? 0 : -1}
-                      aria-label={sc.label}
-                      className={'scope-row' + (on ? ' on' : '')}
-                      onClick={() => pickScope(sc)}
-                      onKeyDown={e => radioKey(e, SCOPES, scopeId, scopeRef, pickScope)}>
-                      <span className="radio" aria-hidden="true"></span>
-                      <span className="sl">{sc.label}</span>
-                      {sc.bundle > 0 && <span className="sv">−{sc.bundle}%</span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="calc-block reveal" style={{ transitionDelay: '.1s' }}>
-              <div className="cb-h"><span className="step">C —</span> Estimated length</div>
-              <div className="pages-row">
-                <input type="range" className="pages-range" min={scope.lo} max={scope.hi} value={pages}
-                  aria-label="Estimated page count"
-                  onChange={e => setPages(Number(e.target.value))} />
-                <div className="pages-val"><span className="pv-n">{pages}</span><span className="pv-l">pages</span></div>
-              </div>
-              <div className="pages-hint">Typical {scope.label.toLowerCase()}: {scope.lo}–{scope.hi} pages. Drag to match your brief.</div>
-            </div>
-
-            <div className="calc-block reveal" style={{ transitionDelay: '.14s' }}>
-              <div className="cb-h"><span className="step">D —</span> Deadline</div>
-              <div className="dl-seg" role="radiogroup" aria-label="Deadline">
-                {DEADLINES.map(d => {
-                  const on = d.id === dlId
-                  const delta = Math.round((d.mult - 1) * 100)
-                  return (
-                    <button key={d.id} role="radio" aria-checked={on}
-                      className={'dl-opt' + (on ? ' on' : '')}
-                      onClick={() => setDlId(d.id)}>
-                      <span className="dl-n">{d.label}</span>
-                      <span className="dl-s">{d.sub}</span>
-                      <span className="dl-m">{delta === 0 ? 'base rate' : (delta > 0 ? `+${delta}%` : `${delta}%`)}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+        <div className="estim-panel reveal" style={{ transitionDelay: '.08s' }}>
+          <div className="ep-lbl">A — Academic level</div>
+          <div className="ep-levels">
+            {LEVELS.map(l => (
+              <button type="button" key={l.id} className={'ep-lvl' + (l.id === levelId ? ' on' : '')} onClick={() => setLevelId(l.id)}>
+                <span className="ep-lvl-b">{l.badge}</span>
+                <span className="ep-lvl-s">{l.sub}</span>
+                <span className="ep-lvl-r">${l.rate}</span>
+              </button>
+            ))}
           </div>
 
-          <div className="quote reveal" aria-live="polite" aria-atomic="true" style={{ transitionDelay: '.1s' }}>
-            <div className="q-top">
-              <span className="live"><span className="dot"></span>Live estimate</span>
-              <span>MS-Q01</span>
+          <div className="ep-lbl">B — Scope of support</div>
+          <div className="ep-scopes">
+            {SCOPES.map(s => (
+              <button type="button" key={s.id} className={'ep-scope' + (s.id === scopeId ? ' on' : '')}
+                onClick={() => { setScopeId(s.id); if (pages > s.hi || pages < s.lo) setPages(Math.min(100, s.def)) }}>
+                {s.short}{s.bundle > 0 && <span className="ep-scope-note">−{s.bundle}%</span>}
+              </button>
+            ))}
+          </div>
+
+          <div className="ep-pages-h">
+            <span className="ep-lbl flat">C — Estimated length</span>
+            <span className="ep-pages-n">{pg} {pg === 1 ? 'page' : 'pages'}</span>
+          </div>
+          <input type="range" className="ep-range" min={1} max={100} value={pg}
+            aria-label="Estimated page count" onChange={e => setPages(Number(e.target.value))} />
+          <div className="ep-range-scale"><span>1 page (~275 words)</span><span>100 pages</span></div>
+
+          <div className="ep-lbl">D — Timeline &amp; deadline</div>
+          <div className="ep-times">
+            {DEADLINES.map(d => (
+              <button type="button" key={d.id} className={'ep-time' + (d.id === tlId ? ' on' : '')} onClick={() => setTlId(d.id)}>
+                <span className="ep-time-n">{d.label}</span>
+                <span className="ep-time-s">{tlNotes[d.id]}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="ep-quote" aria-live="polite">
+            <div className="ep-quote-top">
+              <div>
+                <div className="eq-l">Estimated cost model</div>
+                <div className="eq-sum">{level.name} · {scope.label}</div>
+                <div className="eq-pp">{pg} {pg === 1 ? 'page' : 'pages'} · ${perPage.toFixed(2)}/page</div>
+              </div>
+              <div className="ep-quote-amt">
+                <div className="eq-l">Estimated total</div>
+                <div className="eq-total">{'$' + Math.round(total).toLocaleString('en-US')}</div>
+              </div>
             </div>
-            <div className="q-scope">{scope.label}</div>
-            <div className="q-big">
-              <span className="qfrom">from</span>
-              <span className="amt">${rate}</span>
-              <span className="stk">
-                <span className="t">USD / page</span>
-                <span>{useProjRate ? 'project rate' : 'support rate'}</span>
-                <span>{level.name}</span>
-              </span>
-            </div>
-            <div className="q-rows">
-              <div className="q-row"><span className="l">Estimated length</span><span className="v">{pages} pages</span></div>
-              <div className="q-row"><span className="l">Deadline</span><span className="v">{dl.label} · {dl.sub}{dl.mult !== 1 ? ` (${dl.mult > 1 ? '+' : ''}${Math.round((dl.mult - 1) * 100)}%)` : ''}</span></div>
-              {scope.bundle > 0 && <div className="q-row save"><span className="l">Bundle saving</span><span className="v">−{scope.bundle}%</span></div>}
-              <div className="q-row total"><span className="l">Estimated total</span><span className="v">~{money(total)}</span></div>
-            </div>
-            <p className="q-foot">Just an estimate — your fixed quote is confirmed free within four hours of your brief, and never exceeds it without your say-so.</p>
-            <button className="q-cta" onClick={() => onBrief({ levelId, scopeId, pages, dlId })}>
-              <span>Start your brief</span>{Ico.arrow()}
-            </button>
+            <button type="button" className="ep-lock" onClick={lock}>Lock estimate &amp; meet your scholar {Ico.arrow()}</button>
           </div>
         </div>
       </div>
@@ -526,46 +789,79 @@ function Calc({ onBrief }) {
   )
 }
 
-// ── ASSURANCE ─────────────────────────────────────────────────────────────────
-function Assurance() {
+// ── VETTED EXPERTS · SELECTOR + PROFILE ─────────────────────────────────────────
+function Experts({ onScope }) {
+  const [key, setKey] = useState('nursing')
+  const sp = useMemo(() => SPECIALTIES.find(s => s.key === key) || SPECIALTIES[0], [key])
   return (
-    <section className="assure" id="assurance" aria-labelledby="assure-h">
+    <section className="sec experts" id="experts" aria-labelledby="experts-h">
       <div className="wrap">
-        <div className="assure-head reveal">
-          <div className="kicker"><span className="bar"></span>Your success, assured</div>
-          <h2 id="assure-h">We don't just promise.<br />We <span className="italic">put it in writing.</span></h2>
-          <p>The reason students stay with Meridian for an entire program isn't the writing — it's the certainty. Four guarantees back every single engagement.</p>
+        <div className="experts-head reveal">
+          <div className="kicker"><span className="bar" />Vetted academic experts</div>
+          <h2 id="experts-h">Fewer than 1 in 9 applicants <span className="italic">match our bar.</span></h2>
+          <p>We verify and audit academic credentials, citation-style mastery and subject expertise of every specialist. Choose a field to view a matched profile.</p>
         </div>
-        <div className="assure-grid">
-          {ASSURE.map((a, i) => (
-            <div className="assure-card reveal" key={a.t} style={{ transitionDelay: `${i * 0.06}s` }}>
-              <div className="ic" aria-hidden="true">{Ico[a.ic]()}</div>
-              <h3>{a.t}</h3>
-              <p>{a.b}</p>
+        <div className="experts-pick reveal" style={{ transitionDelay: '.08s' }}>
+          <div className="exp-tabs" role="tablist" aria-label="Specialties">
+            {SPECIALTIES.map(s => (
+              <button type="button" key={s.key} role="tab" aria-selected={s.key === key}
+                className={'exp-tab' + (s.key === key ? ' on' : '')} onClick={() => setKey(s.key)}>
+                <span>{s.label}</span>{Ico.chev({ width: 16, height: 16 })}
+              </button>
+            ))}
+          </div>
+          <div className="exp-profile">
+            <div className="exp-profile-lbl">Expert profile · matches your brief</div>
+            <div className="exp-profile-top">
+              <span className="exp-av" style={{ background: sp.avBg }}>{sp.initials}</span>
+              <div className="exp-id">
+                <div className="exp-name">{sp.name}</div>
+                <div className="exp-degree">{sp.degree}</div>
+              </div>
+              <div className="exp-metrics">
+                <div><div className="exp-m-n">{sp.rating}{Ico.star({ width: 13, height: 13 })}</div><div className="exp-m-l">Rating</div></div>
+                <div><div className="exp-m-n">{sp.briefs}</div><div className="exp-m-l">Briefs</div></div>
+              </div>
+            </div>
+            <div className="exp-rule" />
+            <div className="exp-sub-lbl">Credentials &amp; background</div>
+            <p className="exp-bg">{sp.bg}</p>
+            <div className="exp-meta-grid">
+              <div><div className="exp-sub-lbl">Verified institution</div><div className="exp-meta-v">{sp.institution}</div></div>
+              <div><div className="exp-sub-lbl">Formatting proficiency</div><div className="exp-meta-v">{sp.format}</div></div>
+            </div>
+            <div className="exp-rule" />
+            <div className="exp-cta-row">
+              <span className="exp-cta-txt">Ready to match with this expert for your capstone, editing or dissertation brief?</span>
+              <button type="button" className="btn btn-ink" onClick={() => onScope()}>Match with expert {Ico.arrow()}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── GUARANTEES · PLEDGE ──────────────────────────────────────────────────────────
+function Guarantees() {
+  return (
+    <section className="guards" id="assurance" aria-labelledby="guards-h">
+      <div className="guards-glow" aria-hidden="true" />
+      <div className="wrap">
+        <div className="guards-head reveal">
+          <div className="kicker on-ink"><span className="bar" />Our pledge</div>
+          <h2 id="guards-h">We don't just promise.<br /><span className="italic">We guarantee.</span></h2>
+          <p>Why do students stay with Meridian across an entire program? Because we back every brief with complete certainty — not just good intentions.</p>
+        </div>
+        <div className="guards-grid">
+          {GUARDS.map((g, i) => (
+            <div className="guard-card reveal" key={g.t} style={{ transitionDelay: `${i * 0.06}s` }}>
+              <span className="guard-ic" aria-hidden="true">{Ico[g.ic]({ width: 21, height: 21 })}</span>
+              <h3>{g.t}</h3>
+              <p>{g.b}</p>
             </div>
           ))}
         </div>
-        <div className="assure-pledge reveal">
-          <span className="seal" aria-hidden="true">{Ico.seal()}</span>
-          <p className="pt">"If we ever miss a deadline we agreed to, your next engagement is free. We've only had to honor it a handful of times — and we intend to keep it that way."</p>
-          <div className="sig">The Meridian<br />on-time pledge</div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ── OUTCOMES ──────────────────────────────────────────────────────────────────
-function Outcomes() {
-  return (
-    <section className="outcomes" aria-label="Results">
-      <div className="wrap outcomes-grid">
-        {OUTCOMES.map(o => (
-          <div className="outcome reveal" key={o.l}>
-            <div className="n">{o.n}</div>
-            <div className="l">{o.l}</div>
-          </div>
-        ))}
       </div>
     </section>
   )
@@ -576,29 +872,21 @@ function Testimonials() {
   return (
     <section className="sec" id="stories" aria-labelledby="testi-h">
       <div className="wrap">
-        <div className="sec-head reveal">
-          <div className="h-main">
-            <div className="kicker"><span className="bar"></span>Student stories</div>
-            <h2 id="testi-h">They came for help.<br />They <span className="italic">left more capable.</span></h2>
-          </div>
-          <p className="sec-lede">Outcomes from students across disciplines who stayed with the same expert.</p>
+        <div className="testi-head reveal">
+          <div className="kicker"><span className="bar" />What students say</div>
+          <h2 id="testi-h">Trusted at the <span className="italic">hardest moments.</span></h2>
         </div>
         <div className="testi-grid">
           {TESTI.map((t, i) => (
-            <figure className="testi reveal" key={t.nm} style={{ transitionDelay: `${i * 0.07}s` }}>
+            <figure className="testi reveal v2-card" key={t.nm} style={{ transitionDelay: `${i * 0.07}s` }}>
               <div className="stars" aria-label="5 out of 5">
                 {[0,1,2,3,4].map(s => <span key={s}>{Ico.star()}</span>)}
               </div>
-              <blockquote>
-                "{t.q.map((seg, j) => typeof seg === 'string'
-                  ? <span key={j}>{seg}</span>
-                  : <span key={j} className="hl">{seg.hl}</span>
-                )}"
-              </blockquote>
+              <blockquote>“{t.q}”</blockquote>
               <figcaption className="who">
-                <span className="av" aria-hidden="true">{t.av}</span>
+                <span className="av" aria-hidden="true" style={{ background: t.avBg }}>{t.av}</span>
                 <span>
-                  <span className="nm" style={{ display: 'block' }}>{t.nm}</span>
+                  <span className="nm">{t.nm}</span>
                   <span className="dg">{t.dg}</span>
                 </span>
               </figcaption>
@@ -610,75 +898,44 @@ function Testimonials() {
   )
 }
 
-// ── EXPERTS ───────────────────────────────────────────────────────────────────
-function Experts() {
-  return (
-    <section className="sec experts" id="experts" aria-labelledby="experts-h">
-      <div className="wrap experts-grid">
-        <div className="experts-left reveal">
-          <div className="kicker"><span className="bar"></span>Who you work with</div>
-          <h2 id="experts-h">Real degrees.<br />Real <span className="italic">expertise.</span></h2>
-          <p>Every Meridian expert holds an advanced degree in the field they support and clears credential checks, a discipline exam, and a citation-style audit. Fewer than 1 in 9 applicants make it through.</p>
-          <a href="#apply" className="tlink ex-cta">Meet the bar — write for us {Ico.arrow()}</a>
-        </div>
-        <div className="ex-cards reveal" style={{ transitionDelay: '.08s' }}>
-          {EXPERTS.map(e => (
-            <article className="ex-card" key={e.nm}>
-              <div className="ph" style={STRIPE}>
-                <span className="ph-deg">{e.deg}</span>
-                <span className="ph-mono">portrait · expert headshot</span>
-              </div>
-              <div className="meta">
-                <div className="nm">{e.nm}</div>
-                <div className="fl">{e.fl}</div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 // ── FAQ ───────────────────────────────────────────────────────────────────────
 function FaqSection() {
-  const [openIdx, setOpenIdx] = useState(0)
+  // one open at a time (prototype behavior)
+  const [open, setOpen] = useState(0)
   return (
-    <section className="sec" id="faq" aria-labelledby="faq-h">
-      <div className="wrap faq-grid">
-        <div className="reveal">
-          <div className="kicker"><span className="bar"></span>Good questions</div>
-          <h2 id="faq-h" style={{ fontSize: 'clamp(34px,4vw,52px)', marginTop: 20, letterSpacing: '-0.025em' }}>
-            The things<br />everyone <span className="italic">asks first.</span>
-          </h2>
-          <p style={{ marginTop: 24, color: 'var(--muted)', fontSize: 16 }}>
-            Still unsure? Message us on WhatsApp — a real person answers, usually within the hour.
-          </p>
+    <section className="faq-sec" id="faq" aria-labelledby="faq-h">
+      <div className="wrap narrow">
+        <div className="faq-head reveal">
+          <div className="kicker"><span className="bar" />Questions</div>
+          <h2 id="faq-h">Good to know.</h2>
         </div>
         <div className="faq-list reveal" style={{ transitionDelay: '.06s' }}>
           {FAQ.map((f, i) => {
-            const isOpen = openIdx === i
+            const isOpen = open === i
             return (
               <div className={'faq-item' + (isOpen ? ' open' : '')} key={i}>
-                <button className="faq-q" aria-expanded={isOpen} onClick={() => setOpenIdx(isOpen ? -1 : i)}>
+                <button type="button" className="faq-q" aria-expanded={isOpen}
+                  aria-controls={`faq-a-${i}`} onClick={() => setOpen(isOpen ? -1 : i)}>
                   <span>{f.q}</span>
-                  <span className="ico" aria-hidden="true"></span>
+                  <span className="faq-ico" aria-hidden="true">{isOpen ? Ico.check({ width: 16, height: 16 }) : Ico.arrow({ width: 16, height: 16 })}</span>
                 </button>
-                <div className="faq-a" style={{ maxHeight: isOpen ? '320px' : '0' }}>
-                  <div className="inner">{f.a}</div>
-                </div>
+                {isOpen && <div className="faq-a" id={`faq-a-${i}`}>{f.a}</div>}
               </div>
             )
           })}
         </div>
+        <div className="faq-foot">
+          Still wondering? <button type="button" className="faq-link" onClick={() => (window.MeridianOpenConcierge ? window.MeridianOpenConcierge() : window.open(`https://wa.me/${WA_NUM}`, '_blank'))}>Ask the concierge →</button>
+        </div>
       </div>
     </section>
   )
 }
 
-// ── APPLY ─────────────────────────────────────────────────────────────────────
+// ── WRITERS / APPLY ─────────────────────────────────────────────────────────────
 function Apply() {
   const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [degree, setDegree] = useState('PhD')
   const [field, setField] = useState('')
@@ -695,10 +952,13 @@ function Apply() {
 
   async function submit(e) {
     e.preventDefault()
-    if (!name.trim() || !phone.trim()) { setErr('Name and WhatsApp number are required.'); return }
+    if (!name.trim()) { setErr('Please add your full name.'); return }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { setErr('Please add a valid email — it’s how we send your account details if you’re approved.'); return }
+    if (!phone.trim()) { setErr('Please add your WhatsApp number.'); return }
     setErr(''); setLoading(true)
     const { error } = await supabase.from('writer_applications').insert({
       name: name.trim(),
+      email: email.trim().toLowerCase(),
       phone: phone.trim(),
       degree,
       specialty: field.trim() || null,
@@ -712,7 +972,7 @@ function Apply() {
     <section className="apply" id="apply" aria-labelledby="apply-h">
       <div className="wrap apply-grid">
         <div className="apply-left reveal">
-          <div className="kicker"><span className="bar"></span>For writers</div>
+          <div className="kicker on-ink"><span className="bar" />For writers</div>
           <h2 id="apply-h">Join a team that takes<br /><span className="italic">quality seriously.</span></h2>
           <p>If you hold an advanced degree and want flexible, well-paid academic work with students who value your expertise, we'd like to meet you.</p>
           <ul className="apply-crit">
@@ -724,7 +984,7 @@ function Apply() {
             <div className="apply-ok" role="status">
               <span className="ck" aria-hidden="true">{Ico.check({ width: 28, height: 28 })}</span>
               <h3>Application received.</h3>
-              <p>Thank you. We'll review your background and reach out via WhatsApp within 48 hours.</p>
+              <p>Thank you. We'll review your background and reach out by email or WhatsApp within 48 hours. If you're approved, your expert account details arrive by email.</p>
             </div>
           ) : (
             <form onSubmit={submit} noValidate aria-labelledby="apply-form-ttl">
@@ -734,6 +994,11 @@ function Apply() {
                 <label htmlFor="ap-name">Full name *</label>
                 <input id="ap-name" type="text" placeholder="Dr. Janelle Okafor"
                   value={name} onChange={e => setName(e.target.value)} aria-required="true" />
+              </div>
+              <div className="field">
+                <label htmlFor="ap-email">Email *</label>
+                <input id="ap-email" type="email" autoComplete="email" placeholder="you@email.com"
+                  value={email} onChange={e => setEmail(e.target.value)} aria-required="true" />
               </div>
               <div className="field-row">
                 <div className="field">
@@ -772,23 +1037,25 @@ function Apply() {
 }
 
 // ── FINAL CTA ─────────────────────────────────────────────────────────────────
-function Final({ onBrief }) {
+function Final({ onScope }) {
   return (
     <section className="final" aria-labelledby="final-h">
-      <div className="wrap narrow">
-        <div className="reveal">
-          <div className="kicker" style={{ justifyContent: 'center', marginBottom: 24 }}>
-            <span className="bar"></span>Your program, handled
+      <div className="wrap">
+        <div className="final-card reveal">
+          <div className="final-glow" aria-hidden="true" />
+          <div className="final-inner">
+            <h2 id="final-h">Your deadline's coming. <span className="italic">Scope it in seconds.</span></h2>
+            <p>Paste your assignment and get an instant, expert-grade plan and price — or ask our concierge anything.</p>
+            <div className="final-ctas">
+              <button type="button" className="btn btn-accent btn-lg" aria-label="Scope my work" onClick={() => onScope()}>
+                Scope my work {Ico.arrow()}
+              </button>
+              <button type="button" className="btn btn-ghost-ink btn-lg"
+                onClick={() => (window.MeridianOpenConcierge ? window.MeridianOpenConcierge() : window.open(`https://wa.me/${WA_NUM}`, '_blank'))}>
+                {Ico.sparkF()} Ask Meridian
+              </button>
+            </div>
           </div>
-          <h2 id="final-h">Stop carrying it<br /><span className="italic">alone.</span></h2>
-          <p>Get a transparent estimate in under a minute, then meet the expert who'll see you through. No commitment until your quote is locked.</p>
-          <div className="final-ctas">
-            <button className="btn btn-accent btn-lg" onClick={() => onBrief()}>
-              Start your brief {Ico.arrow()}
-            </button>
-            <a href="#pricing" className="btn btn-ghost btn-lg">See pricing first</a>
-          </div>
-          <div className="final-meta">APA 7 default · 50/50 payment · Confidential · Delivered before deadline</div>
         </div>
       </div>
     </section>
@@ -796,84 +1063,95 @@ function Final({ onBrief }) {
 }
 
 // ── FOOTER ────────────────────────────────────────────────────────────────────
-function Footer({ onBrief }) {
+function Footer() {
   return (
     <footer className="footer" role="contentinfo">
-      <div className="wrap">
-        <div className="foot-top">
-          <div className="foot-brand">
-            <div className="mk" aria-hidden="true">M</div>
-            <div className="nm">Meridian Studio</div>
-            <p>Expert academic support for students across every discipline and degree level. Human, accountable, and built to help you succeed.</p>
+      <div className="wrap foot-top">
+        <div className="foot-brand">
+          <div className="foot-mk">
+            <span className="mk" aria-hidden="true">M</span>
+            <span className="nm">Meridian Studio</span>
           </div>
-          <div className="foot-col">
-            <h4>Service</h4>
-            <ul>
-              <li><a href="#pricing">Pricing estimate</a></li>
-              <li><a href="#how">How it works</a></li>
-              <li><a href="#disciplines">Disciplines</a></li>
-              <li><a href="#assurance">Our promise</a></li>
-            </ul>
-          </div>
-          <div className="foot-col">
-            <h4>Company</h4>
-            <ul>
-              <li><a href="#experts">Our experts</a></li>
-              <li><a href="#stories">Student stories</a></li>
-              <li><a href="#faq">FAQ</a></li>
-              <li><a href="#apply">Write for us</a></li>
-            </ul>
-          </div>
-          <div className="foot-col">
-            <h4>Account</h4>
-            <ul>
-              <li><a href="/workspace">Sign in</a></li>
-              <li><a href="/workspace">My orders</a></li>
-              <li><button className="foot-brief-link" onClick={() => onBrief()}>Start a brief</button></li>
-              <li><a href="/expert">Expert login</a></li>
-            </ul>
-          </div>
+          <p>AI-guided intake, advanced-degree experts, integrity built in — academic support you can defend.</p>
         </div>
-        <div className="foot-bot">
-          <span className="cp">© MMXXVI · Meridian Studio · All rights reserved</span>
-          <a href={`https://wa.me/${WA_NUM}`} target="_blank" rel="noreferrer" className="wa-btn">
-            {Ico.wa()}<span>Chat on WhatsApp</span>
-          </a>
-        </div>
+        {FOOT_COLS.map(col => (
+          <div className="foot-col" key={col.head}>
+            <h4>{col.head}</h4>
+            <ul>
+              {col.links.map(([h, l]) => (
+                <li key={l}>
+                  {h
+                    ? <a href={h}>{l}</a>
+                    : <button type="button" className="foot-brief-link" onClick={openConcierge}>{l}</button>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="wrap foot-bot">
+        <span className="cp">© 2026 Meridian Studio · independent academic support, not affiliated with any institution.</span>
+        <span className="foot-tagline">Built for students who care about doing it right.</span>
+        <a href={`https://wa.me/${WA_NUM}`} target="_blank" rel="noreferrer" className="wa-btn">
+          {Ico.wa()}<span>Chat on WhatsApp</span>
+        </a>
       </div>
     </footer>
   )
 }
 
 // ── BRIEF FLOW MODAL ──────────────────────────────────────────────────────────
-function BriefFlow({ open, onClose, prefill }) {
-  const [step, setStep] = useState('input')   // input | parsing | review | done
-  const [raw, setRaw] = useState('')
+export function BriefFlow({ open, onClose, prefill }) {
+  const [sent, setSent] = useState(false)
   const [err, setErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [fileName, setFileName] = useState('')
-  const [aiNote, setAiNote] = useState('')
-  const [extracting, setExtracting] = useState(false)
-  const fileRef = useRef(null)
+  const [account, setAccount] = useState(null)    // signed-in client → skip name/email
+  const [variant, setVariant] = useState(null)    // 'temp' | 'existed' | 'account' — success shape
+  const [temp, setTemp] = useState(null)          // { email, password } for new-guest temp sign-in
+  const [copied, setCopied] = useState('')        // 'email' | 'pass' — momentary copy feedback
 
   const [f, setF] = useState({
-    title: '', discipline: 'Nursing & Health Sciences', level: 'dnp', scope: 'cap',
-    pages: 80, citation: 'APA 7', deadline: 'standard', requirements: '',
-    name: '', whatsapp: '', notes: '', wantsCall: false,
+    title: '', discipline: 'Nursing & Health Sciences', level: 'ms', scope: 'one',
+    pages: 0, citation: 'APA 7', deadline: 'standard', requirements: '',
+    name: '', email: '', notes: '',
   })
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
 
   useEffect(() => {
-    if (open && prefill) {
+    if (!open) return
+    if (prefill) {
       setF(p => ({
         ...p,
         level: prefill.levelId || p.level,
         scope: prefill.scopeId || p.scope,
         pages: prefill.pages || p.pages,
         deadline: prefill.dlId || p.deadline,
+        title: prefill.title || p.title,
+        discipline: prefill.discipline || p.discipline,
+        citation: prefill.citation || p.citation,
+        requirements: Array.isArray(prefill.requirements) ? prefill.requirements.join('\n') : (prefill.requirements || p.requirements),
+        // The original request / scope text rides along into the order notes.
+        notes: prefill.text ? String(prefill.text) : p.notes,
       }))
     }
-    if (open) { setStep('input'); setErr(''); setFileName(''); setAiNote(''); setExtracting(false) }
+    setSent(false); setErr(''); setSubmitting(false)
+    setVariant(null); setTemp(null); setCopied('')
+    // Detect whether the visitor is already a registered, signed-in client.
+    ;(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          let nm = session.user.user_metadata?.name || ''
+          try {
+            const { data: prof } = await supabase.from('profiles').select('name, email').eq('id', session.user.id).single()
+            if (prof?.name) nm = prof.name
+          } catch {}
+          setAccount({ id: session.user.id, email: session.user.email, name: nm })
+        } else {
+          setAccount(null)
+        }
+      } catch { setAccount(null) }
+    })()
   }, [open])
 
   useEffect(() => { document.body.style.overflow = open ? 'hidden' : '' }, [open])
@@ -890,87 +1168,33 @@ function BriefFlow({ open, onClose, prefill }) {
   const rate  = (scope.proj && level.proj != null) ? level.proj : level.rate
   const total = rate * f.pages * dl.mult * (1 - scope.bundle / 100)
 
-  function manual() { setAiNote(''); setErr(''); setStep('review') }
+  // Did we arrive with a real scope (from the hero AI-intake or guided estimator)?
+  const hasScope = (f.pages > 0) || !!(prefill && (prefill.levelId || prefill.pages || prefill.title))
+  const scopeLine = f.title || `${level.name} · ${scope.label}${f.pages > 0 ? ` · ${f.pages} pages` : ''}`
 
-  function readFile(file) {
-    if (!file) return
-    setFileName(file.name); setErr(''); setAiNote('')
-    const name = file.name.toLowerCase()
-    const finish = (txt, note) => { setRaw((txt || '').trim()); setExtracting(false); if (note) setAiNote(note) }
-    ;(async () => {
-      try {
-        if (window.pdfjsLib?.GlobalWorkerOptions && !window.pdfjsLib.GlobalWorkerOptions.workerSrc)
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
-        if (name.endsWith('.pdf') && window.pdfjsLib) {
-          setExtracting(true)
-          const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise
-          let txt = ''
-          for (let i = 1; i <= pdf.numPages; i++) { const pg = await pdf.getPage(i); const c = await pg.getTextContent(); txt += c.items.map(s => s.str).join(' ') + '\n' }
-          finish(txt, 'Pulled the text from your PDF — read it with AI, or tidy it below first.')
-        } else if (name.endsWith('.docx') && window.mammoth) {
-          setExtracting(true)
-          const res = await window.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })
-          finish(res.value, 'Pulled the text from your document — read it with AI, or tidy it below first.')
-        } else if (/\.(txt|md|csv|rtf)$/i.test(name) || (file.type && file.type.startsWith('text'))) {
-          const r = new FileReader(); r.onload = () => finish(String(r.result || '')); r.readAsText(file)
-        } else {
-          setExtracting(false)
-          setAiNote("We've got your file. Paste the key details below too, or we'll read it when your brief arrives.")
-        }
-      } catch (e) {
-        setExtracting(false)
-        setAiNote("Couldn't read that file automatically — paste the text below and we'll take it from there.")
-      }
-    })()
-  }
+  // Progressive contact capture: email reveals once a non-empty name is present.
+  const nameOk  = f.name.trim().length > 0
+  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())
+  const canSubmit = account ? true : (nameOk && emailOk)
 
-  async function runAI() {
-    if (!raw.trim()) { setErr('Paste your rubric or assignment prompt first — or try the sample.'); return }
-    setErr(''); setStep('parsing')
-    const prompt = `You are the intake assistant for Meridian Studio, an academic support service. Read the assignment brief below and return ONLY a JSON object (no prose, no markdown fences) with these keys:
-"title": short descriptive title (max 8 words),
-"discipline": one of ${JSON.stringify(DISCIPLINES)} — closest match,
-"level": one of "ug","ms","adv","dnp","phd",
-"scope": one of "one","course","term","cap","diss","prog",
-"pages": integer page estimate (convert ~275 words = 1 page if only word count given; if a range, use the midpoint; else null),
-"citation": one of "APA 7","MLA 9","Chicago","Harvard","Other / not sure",
-"deadline": "rush" if due within 2 days, "standard" if within 3-9 days, "relaxed" if 10+ days or unstated,
-"requirements": array of up to 4 short strings capturing the most important instructions.
-
-BRIEF:
-"""${raw.slice(0, 6000)}"""`
-    try {
-      const res = await callAI(prompt)
-      const j = JSON.parse(res.slice(res.indexOf('{'), res.lastIndexOf('}') + 1))
-      const lv = LEVELS.find(l => l.id === j.level) ? j.level : f.level
-      const sc = SCOPES.find(s => s.id === j.scope) ? j.scope : f.scope
-      const dd = DEADLINES.find(d => d.id === j.deadline) ? j.deadline : f.deadline
-      const disc = DISCIPLINES.includes(j.discipline) ? j.discipline : f.discipline
-      const cit = CITATIONS.includes(j.citation) ? j.citation : f.citation
-      const scObj = SCOPES.find(s => s.id === sc)
-      let pages = Number.isFinite(j.pages) && j.pages > 0 ? Math.round(j.pages) : scObj.def
-      pages = Math.max(scObj.lo, Math.min(Math.round(scObj.hi * 1.5), pages))
-      setF(p => ({
-        ...p, title: j.title || p.title, discipline: disc, level: lv, scope: sc,
-        pages, citation: cit, deadline: dd,
-        requirements: Array.isArray(j.requirements) ? j.requirements.join('\n') : p.requirements,
-      }))
-      setAiNote('Read from your brief by our intake AI — please double-check each field.')
-      setStep('review')
-    } catch (e) {
-      setAiNote("We couldn't auto-read that one — no problem. Fill in the essentials below and we'll take it from there.")
-      setStep('review')
-    }
+  async function copy(which, value) {
+    try { await navigator.clipboard.writeText(value) } catch {}
+    setCopied(which)
+    setTimeout(() => setCopied(c => (c === which ? '' : c)), 1600)
   }
 
   async function submitBrief(e) {
-    e.preventDefault()
-    if (!f.name.trim() || !f.whatsapp.trim()) {
-      setErr('Please add your name and WhatsApp number so your expert can reach you.')
-      return
+    if (e) e.preventDefault()
+    if (!account) {
+      if (!nameOk) { setErr('Please add your name.'); return }
+      if (!emailOk) { setErr('Please add a valid email — it’s how we set up your workspace.'); return }
     }
     setErr(''); setSubmitting(true)
-    const { error } = await supabase.from('briefs').insert({
+    const email = (account ? account.email : f.email).trim().toLowerCase()
+    const submitterName = (account ? (account.name || '') : f.name).trim()
+    const estimate = f.pages > 0 ? Math.round(total / 10) * 10 : null
+    const requestText = (f.notes || '').trim()
+    const base = {
       title: f.title || null,
       discipline: f.discipline,
       level: f.level,
@@ -979,185 +1203,211 @@ BRIEF:
       citation: f.citation,
       deadline: f.deadline,
       requirements: f.requirements || null,
-      estimate_usd: Math.round(total / 10) * 10,
-      wants_call: f.wantsCall,
-      name: f.name.trim(),
-      whatsapp: f.whatsapp.trim(),
-      notes: f.notes || null,
-      rubric_text: raw || null,
-    })
+      estimate_usd: estimate,
+      name: submitterName || null,
+      notes: requestText || null,
+    }
+    // 1) Record the brief — fires the admin alert + client confirmation emails.
+    let { error } = await supabase.from('briefs').insert({ ...base, email: email || null })
+    if (error && (error.code === '42703' || error.code === 'PGRST204' || /email/i.test(error.message || ''))) {
+      const notes = [base.notes, 'Email: ' + email].filter(Boolean).join('\n')
+      ;({ error } = await supabase.from('briefs').insert({ ...base, notes }))
+    }
+    // 2) Create a trackable order so the client sees it in their workspace.
+    let createdRef = null
+    try {
+      const { data: refData } = await supabase.rpc('generate_order_ref')
+      const ref = refData || ('MS-' + Date.now().toString().slice(-5))
+      createdRef = ref
+      const { data: { session } } = await supabase.auth.getSession()
+      const orderRow = {
+        ref,
+        level: level.id,
+        level_label: level.name,
+        program: f.discipline,
+        title: f.title || null,
+        discipline: f.discipline || null,
+        pages: f.pages ? Number(f.pages) : null,
+        citation: f.citation || null,
+        requirements: f.requirements || null,
+        scope_id: scope.id,
+        scope_label: scope.label,
+        has_project: !!scope.proj,
+        is_bundle: scope.bundle > 0,
+        rate_writing: rate,
+        rate_project: (scope.proj && level.proj != null) ? level.proj : null,
+        estimate_usd: estimate,
+        due_date: null,
+        notes: [
+          f.title && ('Title: ' + f.title),
+          f.requirements && ('Requirements: ' + f.requirements),
+          requestText && ('Request:\n' + requestText.slice(0, 4000)),
+        ].filter(Boolean).join('\n\n') || null,
+        client_name: submitterName || null,
+        client_email: email || null,
+        status: 'new',
+        payment_status: 'unpaid',
+        client_id: session?.user?.id || null,
+      }
+      let { error: oErr } = await supabase.from('orders').insert(orderRow)
+      if (oErr && (oErr.code === '42703' || /estimate_usd|column/i.test(oErr.message || ''))) {
+        // schema lag — drop any newer optional columns and retry with the safe core
+        const { estimate_usd, title, discipline, pages, citation, requirements, ...minimal } = orderRow
+        await supabase.from('orders').insert(minimal)
+      }
+    } catch (oe) { console.error('order create failed', oe) }
+
+    // 3) Provision the workspace login.
+    if (account) {
+      // Signed-in client: the order is already attached to their account.
+      setVariant('account')
+    } else if (createdRef) {
+      // New guest: ask ensure-client-auth to create the account with a SYSTEM-
+      // generated temp password (we send NO password) and return it for first
+      // sign-in. An existing email comes back created:false (never a password).
+      try {
+        const { data: prov } = await supabase.functions.invoke('ensure-client-auth', {
+          body: { email, ref: createdRef, name: submitterName },
+        })
+        if (prov?.created && prov?.tempPassword) {
+          setTemp({ email, password: prov.tempPassword })
+          setVariant('temp')
+        } else if (prov?.created) {
+          // Account made but no password returned (shouldn't happen) — point to sign-in.
+          setVariant('existed')
+        } else {
+          setVariant('existed')   // email already registered — sign in with usual password
+        }
+      } catch (se) {
+        setVariant('existed')     // best-effort — never blocks the confirmation screen
+      }
+    }
+
     setSubmitting(false)
     if (error) { setErr('Submission failed — please try again.'); console.error(error) }
-    else setStep('done')
+    else setSent(true)
   }
 
-  const waText = encodeURIComponent(
-    `Hi Meridian — I'd like to start a brief.\n\nTitle: ${f.title || '(untitled)'}\nDiscipline: ${f.discipline}\nLevel: ${level.name}\nScope: ${scope.label}\nLength: ~${f.pages} pages\nCitation: ${f.citation}\nDeadline: ${dl.label} (${dl.sub})\nEstimate: ${money(total)}${f.wantsCall ? '\n\nI\'d like a free 15-min scoping call first.' : ''}`
-  )
+  // "Open my workspace →": for a fresh temp account, sign in with the generated
+  // password, claim the order, then land in the workspace; otherwise just navigate.
+  async function openWorkspace(e) {
+    if (variant === 'temp' && temp) {
+      if (e) e.preventDefault()
+      try {
+        const { error: siErr } = await supabase.auth.signInWithPassword({ email: temp.email, password: temp.password })
+        if (!siErr) { try { await supabase.rpc('claim_my_orders') } catch {} }
+      } catch {}
+      window.location.href = '/workspace'
+    }
+    // For 'account' the href="/workspace" handles navigation natively.
+  }
 
   if (!open) return null
-  const stepN = step === 'input' || step === 'parsing' ? 1 : step === 'review' ? 2 : 3
+
+  const firstName = (account?.name || f.name).trim().split(/\s+/)[0]
+  const briefTitle = sent ? 'All set' : 'Start your brief'
+  const briefSub = sent
+    ? 'Your expert takes it from here.'
+    : 'Confirm where to reach you — an expert takes it from here.'
 
   return (
     <div className="bf-overlay" role="dialog" aria-modal="true" aria-label="Start your brief"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="bf-panel">
-        <div className="bf-head">
-          <div className="bf-steps" aria-hidden="true">
-            {['Upload', 'Review', 'Confirm'].map((s, i) => (
-              <span key={s} className={'bf-stp' + (i + 1 === stepN ? ' on' : '') + (i + 1 < stepN ? ' done' : '')}>
-                <span className="n">{i + 1 < stepN ? Ico.check({ width: 12, height: 12 }) : i + 1}</span>{s}
-              </span>
-            ))}
+      <div className="bf-panel bf-lean">
+        <div className="bf-lhead">
+          <div>
+            <div className="bf-ltitle">{briefTitle}</div>
+            <div className="bf-lsub">{briefSub}</div>
           </div>
-          <button className="bf-x" aria-label="Close" onClick={onClose}>{Ico.x({ width: 18, height: 18 })}</button>
+          <button type="button" className="bf-x" aria-label="Close" onClick={onClose}>{Ico.x({ width: 18, height: 18 })}</button>
         </div>
 
-        {/* STEP 1 — INPUT */}
-        {step === 'input' && (
-          <div className="bf-body">
-            <div className="bf-kick">{Ico.spark()} AI-assisted intake</div>
-            <h3 className="bf-h">Drop your rubric.<br />We'll <span className="italic">build the brief.</span></h3>
-            <p className="bf-sub">Paste your assignment prompt or rubric and our intake reads the level, scope, deadline, page count and citation style for you. Takes about thirty seconds — and you can fix anything before it's sent.</p>
+        {/* ── SUCCESS STATE ── */}
+        {sent ? (
+          <div className="bf-lbody bf-lsuccess">
+            <span className="bf-lcheck" aria-hidden="true">{Ico.check({ width: 28, height: 28 })}</span>
+            <div className="bf-lwin">You're in{firstName ? `, ${firstName}` : ''}.</div>
 
-            <div className="bf-drop" onClick={() => fileRef.current?.click()}
-              onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('over') }}
-              onDragLeave={e => e.currentTarget.classList.remove('over')}
-              onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('over'); readFile(e.dataTransfer.files[0]) }}>
-              <span className="bf-drop-ic">{extracting ? <span className="bf-mini-spin"></span> : Ico.upload()}</span>
-              <span className="bf-drop-t">{extracting ? 'Reading your file…' : (fileName || 'Drop a file or click to upload')}</span>
-              <span className="bf-drop-s">PDF, DOCX, or TXT · we read it for you</span>
-              <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt,.md,.rtf" hidden onChange={e => readFile(e.target.files[0])} />
-            </div>
+            {variant === 'account' ? (
+              <p className="bf-ltext">This order's been added to your workspace — sign in any time to track it, message your expert, and pay your deposit.</p>
+            ) : variant === 'existed' ? (
+              <p className="bf-ltext">You already have an account with <b>{f.email}</b> — sign in at <b>primemeridian.academy/workspace</b> with your usual password to track this order.</p>
+            ) : (
+              <p className="bf-ltext">Your workspace is ready — sign in to track it, message your expert, and pay your deposit.</p>
+            )}
 
-            <textarea className="bf-ta" placeholder="…or paste your rubric / assignment prompt here" value={raw} onChange={e => setRaw(e.target.value)} />
-            <div className="bf-inline">
-              <button className="bf-link" onClick={() => { setRaw(SAMPLE_RUBRIC); setFileName('') }}>Try a sample rubric</button>
-              <button className="bf-link" onClick={manual}>Skip — fill in manually</button>
-            </div>
-            {err && <div className="bf-err" role="alert">{err}</div>}
-            <div className="bf-actions">
-              <button className="btn btn-accent btn-lg" onClick={runAI}>{Ico.spark()} Read my brief with AI</button>
-            </div>
-            <p className="bf-fine">Your file is private and used only to scope your work. We screen every deliverable for originality.</p>
-          </div>
-        )}
-
-        {/* PARSING */}
-        {step === 'parsing' && (
-          <div className="bf-body bf-parsing">
-            <div className="bf-spin" aria-hidden="true"></div>
-            <h3 className="bf-h" style={{ textAlign: 'center' }}>Reading your brief…</h3>
-            <p className="bf-sub" style={{ textAlign: 'center' }}>Pulling out your level, scope, deadline, and requirements.</p>
-          </div>
-        )}
-
-        {/* STEP 2 — REVIEW */}
-        {step === 'review' && (
-          <form className="bf-body bf-review" onSubmit={submitBrief}>
-            <h3 className="bf-h">Check your <span className="italic">brief.</span></h3>
-            {aiNote && <div className="bf-note">{Ico.spark()}<span>{aiNote}</span></div>}
-            <div className="bf-grid">
-              <div className="bf-main">
-                <label className="bf-field full"><span>Assignment title</span>
-                  <input type="text" value={f.title} placeholder="e.g. DNP Capstone Proposal"
-                    onChange={e => set('title', e.target.value)} /></label>
-                <label className="bf-field"><span>Discipline</span>
-                  <select value={f.discipline} onChange={e => set('discipline', e.target.value)}>
-                    {DISCIPLINES.map(d => <option key={d}>{d}</option>)}
-                  </select></label>
-                <label className="bf-field"><span>Academic level</span>
-                  <select value={f.level} onChange={e => set('level', e.target.value)}>
-                    {LEVELS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                  </select></label>
-                <label className="bf-field"><span>Scope</span>
-                  <select value={f.scope} onChange={e => {
-                    const sc = SCOPES.find(x => x.id === e.target.value)
-                    set('scope', e.target.value)
-                    if (sc) set('pages', sc.def)
-                  }}>
-                    {SCOPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                  </select></label>
-                <label className="bf-field"><span>Length (pages)</span>
-                  <input type="number" min="1" value={f.pages}
-                    onChange={e => set('pages', Math.max(1, Number(e.target.value) || 1))} /></label>
-                <label className="bf-field"><span>Citation style</span>
-                  <select value={f.citation} onChange={e => set('citation', e.target.value)}>
-                    {CITATIONS.map(c => <option key={c}>{c}</option>)}
-                  </select></label>
-                <label className="bf-field"><span>Deadline</span>
-                  <select value={f.deadline} onChange={e => set('deadline', e.target.value)}>
-                    {DEADLINES.map(d => <option key={d.id} value={d.id}>{d.label} · {d.sub}</option>)}
-                  </select></label>
-                <label className="bf-field full"><span>Key requirements</span>
-                  <textarea rows="3" value={f.requirements} placeholder="One requirement per line"
-                    onChange={e => set('requirements', e.target.value)} /></label>
-                {(f.scope === 'cap' || f.scope === 'diss' || f.scope === 'prog') && (
-                  <button type="button" className={'bf-call full' + (f.wantsCall ? ' on' : '')}
-                    onClick={() => set('wantsCall', !f.wantsCall)}>
-                    <span className="bf-call-ck" aria-hidden="true">{f.wantsCall && Ico.check({ width: 12, height: 12 })}</span>
-                    <span><b>This is a big one — book a free 15-min scoping call first.</b><br />Best for capstones, dissertations &amp; full programs. We'll map the work before you commit a cent.</span>
+            {variant === 'temp' && temp && (
+              <div className="bf-tempbox">
+                <div className="bf-templabel">Your temporary sign-in</div>
+                <div className="bf-temprow">
+                  <span className="bf-tempk">Email</span>
+                  <span className="bf-tempv">{temp.email}</span>
+                  <button type="button" className="bf-copy" aria-label="Copy email" onClick={() => copy('email', temp.email)}>
+                    {copied === 'email' ? Ico.check({ width: 14, height: 14 }) : Ico.copy()}
                   </button>
-                )}
-                <div className="bf-divider"><span>Where do we send your quote?</span></div>
-                <label className="bf-field"><span>Your name *</span>
-                  <input type="text" value={f.name} placeholder="First name is fine"
-                    onChange={e => set('name', e.target.value)} /></label>
-                <label className="bf-field"><span>WhatsApp *</span>
-                  <input type="tel" value={f.whatsapp} placeholder="+1 555 123 4567"
-                    onChange={e => set('whatsapp', e.target.value)} /></label>
-              </div>
-              <aside className="bf-side">
-                <div className="bf-est">
-                  <div className="bf-est-top">Live estimate</div>
-                  <div className="bf-est-amt">{money(total)}</div>
-                  <div className="bf-est-rows">
-                    <div><span>{level.name}</span><span>${rate}/pg</span></div>
-                    <div><span>{f.pages} pages</span><span>{scope.label}</span></div>
-                    <div><span>{dl.label}</span><span>{dl.mult !== 1 ? `${dl.mult > 1 ? '+' : ''}${Math.round((dl.mult - 1) * 100)}%` : 'base'}</span></div>
-                    {scope.bundle > 0 && <div className="sv"><span>Bundle</span><span>−{scope.bundle}%</span></div>}
-                  </div>
-                  <p className="bf-est-note">Estimate only. A specialist confirms your exact quote within 4 hours — you approve it before anything begins.</p>
                 </div>
-              </aside>
-            </div>
-            {err && <div className="bf-err" role="alert">{err}</div>}
-            <div className="bf-actions between">
-              <button type="button" className="bf-link" onClick={() => setStep('input')}>← Back</button>
-              <button type="submit" className="btn btn-accent btn-lg" disabled={submitting}>
-                {submitting ? 'Sending…' : <><span>Send my brief</span>{Ico.arrow()}</>}
-              </button>
-            </div>
-          </form>
-        )}
+                <div className="bf-temprow bf-temprow-b">
+                  <span className="bf-tempk">Password</span>
+                  <span className="bf-tempv bf-tempv-pw">{temp.password}</span>
+                  <button type="button" className="bf-copy" aria-label="Copy password" onClick={() => copy('pass', temp.password)}>
+                    {copied === 'pass' ? Ico.check({ width: 14, height: 14 }) : Ico.copy()}
+                  </button>
+                </div>
+                <div className="bf-tempnote">You'll set your own password on first sign-in. Keep this safe.</div>
+              </div>
+            )}
 
-        {/* STEP 3 — DONE */}
-        {step === 'done' && (
-          <div className="bf-body bf-done">
-            <span className="bf-done-ck" aria-hidden="true">{Ico.check({ width: 30, height: 30 })}</span>
-            <h3 className="bf-h" style={{ textAlign: 'center' }}>
-              Brief received{f.name ? `, ${f.name.split(' ')[0]}` : ''}.
-            </h3>
-            <p className="bf-sub" style={{ textAlign: 'center' }}>
-              {f.wantsCall
-                ? <>A specialist in <b>{f.discipline}</b> will reach out by WhatsApp within four hours to book your free 15-minute scoping call — no commitment.</>
-                : <>A specialist in <b>{f.discipline}</b> is reviewing it now. You'll have your locked quote — and your matched expert — within four hours, by WhatsApp.</>}
-            </p>
-            <div className="bf-summary">
-              <div><span>Title</span><b>{f.title || 'Untitled brief'}</b></div>
-              <div><span>Level · scope</span><b>{level.name} · {scope.label}</b></div>
-              <div><span>Length · deadline</span><b>{f.pages} pages · {dl.label}</b></div>
-              <div><span>Estimate</span><b>{money(total)}</b></div>
-            </div>
-            <div className="bf-actions" style={{ justifyContent: 'center' }}>
-              <a className="btn btn-accent btn-lg"
-                href={`https://wa.me/${WA_NUM}?text=${waText}`}
-                target="_blank" rel="noreferrer">
-                {Ico.wa()} Send it on WhatsApp now
-              </a>
-              <button className="btn btn-ghost btn-lg" onClick={onClose}>Done</button>
-            </div>
+            <a className="btn btn-accent btn-lg bf-lprimary" href="/workspace" onClick={openWorkspace}>
+              <span>Open my workspace</span>{Ico.arrow()}
+            </a>
+            <button type="button" className="bf-lghost" onClick={onClose}>Maybe later</button>
           </div>
+        ) : (
+          /* ── FORM STATE ── */
+          <form className="bf-lbody bf-lform" onSubmit={submitBrief}>
+            {hasScope && (
+              <div className="bf-scopebar">
+                <span className="bf-scopeck" aria-hidden="true">{Ico.check({ width: 14, height: 14 })}</span>
+                <div className="bf-scopetext">
+                  <div className="bf-scopeline">{scopeLine}</div>
+                  <div className="bf-scopesub">50% deposit to start · balance on delivery</div>
+                </div>
+                <div className="bf-scopeest">{f.pages > 0 ? `from ${money(total)}` : 'On review'}</div>
+              </div>
+            )}
+
+            {account ? (
+              <div className="bf-note bf-lnote">
+                {Ico.check({ width: 16, height: 16 })}
+                <span>Signed in as <b>{account.name || account.email}</b>. We'll add this order to your workspace — no need to re-enter your details.</span>
+              </div>
+            ) : (
+              <>
+                <label className="bf-lfield">
+                  <span>Your name</span>
+                  <input type="text" value={f.name} placeholder="First name is fine"
+                    autoComplete="given-name" autoFocus onChange={e => set('name', e.target.value)} />
+                </label>
+                <div className={'bf-reveal' + (nameOk ? ' on' : '')}>
+                  <label className="bf-lfield">
+                    <span>Your email</span>
+                    <input type="email" value={f.email} placeholder="you@email.com"
+                      autoComplete="email" onChange={e => set('email', e.target.value)} />
+                  </label>
+                </div>
+              </>
+            )}
+
+            {err && <div className="bf-err" role="alert">{err}</div>}
+
+            <button type="submit" className="btn btn-accent btn-lg bf-lprimary"
+              disabled={submitting || !canSubmit}
+              style={(submitting || !canSubmit) ? { opacity: .5, cursor: 'default' } : undefined}>
+              {submitting ? 'Matching…' : <><span>Match me with an expert</span>{Ico.arrow()}</>}
+            </button>
+
+            <div className="bf-confidential">{Ico.lock()} Confidential — no card needed to start.</div>
+          </form>
         )}
       </div>
     </div>
@@ -1168,12 +1418,18 @@ BRIEF:
 export default function HomePage() {
   const [briefOpen, setBriefOpen] = useState(false)
   const [briefPrefill, setBriefPrefill] = useState(null)
+  const intakeFocusRef = useRef(null)
   useReveal()
-  useEffect(() => { document.title = 'Meridian Studio — Built to help you succeed.' }, [])
+  useEffect(() => { document.title = 'Expert Academic Support & Tutoring | Meridian Studio' }, [])
 
   function openBrief(prefill) {
     setBriefPrefill(prefill || null)
     setBriefOpen(true)
+  }
+
+  // "Scope my work" CTAs focus the hero AI-intake console.
+  function scopeMyWork() {
+    if (intakeFocusRef.current) intakeFocusRef.current()
   }
 
   // Expose a stable global so the Concierge widget can open the brief modal
@@ -1183,24 +1439,40 @@ export default function HomePage() {
     return () => { if (window.MeridianOpenBrief === openBrief) delete window.MeridianOpenBrief }
   }, [])
 
+  // Open the brief directly when arrived via /#brief.
+  useEffect(() => {
+    function checkHash() {
+      if (window.location.hash === '#brief') {
+        openBrief()
+        history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+    }
+    checkHash()
+    window.addEventListener('hashchange', checkHash)
+    return () => window.removeEventListener('hashchange', checkHash)
+  }, [])
+
   return (
     <div className="ms">
       <a href="#main" className="skip">Skip to content</a>
-      <Nav onBrief={openBrief} />
+      <div className="ribbon">
+        <span className="ribbon-ic" aria-hidden="true">{Ico.sealc({ width: 13, height: 13 })}</span>
+        <span>Academic integrity guarantee — every brief screened for originality &amp; 0% AI generation</span>
+      </div>
+      <Nav onBrief={openBrief} onScope={scopeMyWork} />
       <main id="main">
-        <Hero onBrief={openBrief} />
-        <Era />
+        <Hero onBrief={openBrief} intakeRef={intakeFocusRef} />
+        <Comparison />
         <How />
-        <Calc onBrief={openBrief} />
-        <Assurance />
-        <Outcomes />
+        <Estimator onBrief={openBrief} />
+        <Experts onScope={scopeMyWork} />
+        <Guarantees />
         <Testimonials />
-        <Experts />
         <FaqSection />
         <Apply />
-        <Final onBrief={openBrief} />
+        <Final onScope={scopeMyWork} />
       </main>
-      <Footer onBrief={openBrief} />
+      <Footer />
       <BriefFlow open={briefOpen} onClose={() => setBriefOpen(false)} prefill={briefPrefill} />
       <Concierge />
     </div>

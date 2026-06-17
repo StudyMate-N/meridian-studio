@@ -1,0 +1,274 @@
+/* ============================================================
+   Meridian Studio — Workspace design tokens + base.
+   Scoped under .mer-root so it never leaks into the marketing
+   (.ms) or getting-started (.gs) surfaces that share this SPA.
+   ============================================================ */
+
+.mer-root {
+  /* paper / surfaces */
+  --paper:        #F1EBDD;
+  --paper-edge:   #E7DFCC;
+  --surface:      #FBF8F1;
+  --surface-2:    #F6F1E6;
+  --roast:        #211D17;
+  --roast-2:      #2C2720;
+
+  /* ink */
+  --ink:          #211D17;
+  --ink-2:        #5A5247;
+  --muted:        #756B5A;
+  --faint:        #A89E8B;
+  --line:         #E3DBC9;
+  --line-2:       #D8CFBB;
+
+  /* accent */
+  --accent:       #BD5A2C;
+  --accent-deep:  #A2461F;
+  --accent-soft:  #F2E0D2;
+  --on-accent:    #FCF7F0;
+
+  /* dark side-panel ink (sidebar / mobile bar text on --roast) */
+  --side-ink:       #F1EBDD;
+  --side-ink-dim:   rgba(241,235,221,.62);
+  --side-ink-faint: rgba(241,235,221,.4);
+
+  /* status — the core of the redesign */
+  --st-new:       #6F6657;   --st-new-bg:   #EBE5D8;   --st-new-edge:#D8CFBC;
+  --st-action:    #B06A18;   --st-action-bg:#F6E7C8;   --st-action-edge:#E7CE9C;
+  --st-progress:  #3C6699;   --st-progress-bg:#E2E9F2;  --st-progress-edge:#C6D5E8;
+  --st-done:      #3B7A55;   --st-done-bg:  #E1EDE2;   --st-done-edge:#C4DCC7;
+  --st-revision:  #9A4D9C;   --st-revision-bg:#F0E2F0; --st-revision-edge:#DEC6DE;
+
+  /* type */
+  --serif:  "Spectral", Georgia, serif;
+  --sans:   "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --mono:   "JetBrains Mono", ui-monospace, monospace;
+
+  /* geometry */
+  --r-sm: 8px;
+  --r:    13px;
+  --r-lg: 20px;
+  --shadow-card: 0 1px 2px rgba(40,33,22,.04), 0 6px 18px -10px rgba(40,33,22,.18);
+  --shadow-pop:  0 18px 50px -16px rgba(40,33,22,.34);
+
+  /* density */
+  --pad-card: 24px;
+  --gap-list: 16px;
+
+  /* full-screen workspace shell (instead of touching <body>) */
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.mer-root[data-density="compact"] { --pad-card: 16px; --gap-list: 10px; }
+.mer-root[data-density="comfy"]   { --pad-card: 32px; --gap-list: 22px; }
+
+.mer-root *, .mer-root *::before, .mer-root *::after { box-sizing: border-box; }
+.mer-root ::selection { background: var(--accent-soft); color: var(--accent-deep); }
+
+/* scrollbars */
+.mer-root .scroll { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.mer-root .scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.mer-root .scroll::-webkit-scrollbar-thumb {
+  background: var(--line-2); border-radius: 99px;
+  border: 3px solid var(--paper); background-clip: content-box;
+}
+.mer-root .scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* shared utility bits */
+.mer-root .mono {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 11px;
+  font-weight: 500;
+}
+.mer-root .serif { font-family: var(--serif); }
+.mer-root .italic { font-style: italic; }
+.mer-root button { font-family: inherit; cursor: pointer; }
+.mer-root a { color: inherit; }
+
+/* a11y: visible keyboard focus */
+.mer-root :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.mer-root input:focus-visible, .mer-root textarea:focus-visible, .mer-root select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ============================================================
+   Global density — the app reads ~25% larger than the design
+   benchmark at 100% browser zoom. Render the whole workspace at
+   80% on desktop so 100% zoom = the intended scale. Phones keep
+   1:1 (shrinking would hurt readability and tap targets).
+   ============================================================ */
+@media (min-width: 881px) {
+  .mer-root { zoom: 0.8; height: calc(100vh / 0.8); }
+  /* viewport units are NOT scaled by zoom — compensate vh-sized elements so they
+     keep their intended visual size */
+  .mer-root .mer-fp-panel { height: min(calc(94vh / 0.8), 1300px) !important; max-height: calc(94vh / 0.8) !important; }
+  .mer-root .ops-support { height: calc(62vh / 0.8) !important; }
+}
+
+/* ============================================================
+   Responsive — every .mer-* layout class the JSX references is
+   implemented here. Inline grid/display styles need !important
+   to be overridden by these media rules.
+   ============================================================ */
+
+/* desktop: messages shows both panes; in-thread back button hidden */
+@media (min-width: 881px) {
+  .mer-root .mer-mobilebar { display: none !important; }
+}
+@media (min-width: 761px) {
+  .mer-root .mer-hide-mobile { display: flex !important; }
+  .mer-root .mer-back-btn { display: none !important; }
+}
+
+/* delivered tiles: 2-up → 1-up on phones */
+@media (max-width: 640px) { .mer-root .mer-donegrid { grid-template-columns: 1fr !important; } }
+
+/* order detail: 2-col → stacked, rail un-sticks and drops below */
+@media (max-width: 900px) {
+  .mer-root .mer-detail-grid { grid-template-columns: 1fr !important; }
+  .mer-root .mer-rail { position: static !important; }
+}
+
+/* ≤880px: mobile shell — the app row becomes a column so the mobile bar spans
+   the full width on top and content flows beneath it (all three surfaces) */
+@media (max-width: 880px) {
+  .mer-root.mer-app { flex-direction: column !important; }
+  .mer-root .mer-sidebar-desktop, .mer-root .mer-topnav-desktop { display: none !important; }
+  .mer-root .mer-sidebar-reopen { display: none !important; }
+  .mer-root .mer-mobilebar { display: flex !important; width: 100%; }
+  .mer-root .mer-content { padding: 22px 16px 48px !important; }
+  .mer-root .mer-app:has(.mer-msg) .mer-content { padding: 12px 10px !important; }
+}
+
+/* messages: two-pane → single pane with a working back button */
+@media (max-width: 760px) {
+  .mer-root .mer-msg { grid-template-columns: 1fr !important; }
+  .mer-root .mer-hide-mobile { display: none !important; }
+  .mer-root .mer-back-btn { display: grid !important; }
+}
+
+/* phones: give the file preview the whole screen */
+@media (max-width: 560px) {
+  .mer-root .mer-fp-body { padding: 0 !important; }
+}
+/* the file-preview modal renders a real iframe/image — let it fill the device */
+@media (max-width: 760px) {
+  .mer-root .mer-fp-panel { width: 100% !important; height: 100% !important; max-height: 100% !important; border-radius: 0 !important; }
+}
+
+/* ============================================================
+   Expert + Admin page grids — these surfaces share the mobile
+   shell (.mer-sidebar-desktop/.mer-mobilebar) but their own
+   stat/layout grids had no breakpoints. Same patterns as the
+   client's .mer-statgrid/.mer-board.
+   ============================================================ */
+/* expert: 4-up stats → 2 → 1 */
+@media (max-width: 880px) { .mer-root .exp-statgrid { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (max-width: 360px) { .mer-root .exp-statgrid { grid-template-columns: 1fr !important; } }
+
+/* admin: 4-up stat rows (dashboard) → 2 → 1; 5-up billing row is auto-fit so it
+   wraps on its own — only force a single column on the smallest phones */
+@media (max-width: 1024px) { .mer-root .ops-grid4 { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (max-width: 480px)  { .mer-root .ops-grid4 { grid-template-columns: 1fr !important; } }
+@media (max-width: 480px)  { .mer-root .ops-grid5 { grid-template-columns: 1fr !important; } }
+
+/* admin dashboard + billing two-panel rows → stacked */
+@media (max-width: 1024px) { .mer-root .ops-2col { grid-template-columns: 1fr !important; } }
+
+/* admin emails: events list + preview side-by-side → stacked */
+@media (max-width: 880px) { .mer-root .ops-emailwrap { grid-template-columns: 1fr !important; } }
+
+/* admin support: list + thread side-by-side → stacked, scrollable list */
+@media (max-width: 880px) {
+  .mer-root .ops-support { grid-template-columns: 1fr !important; height: auto !important; }
+  .mer-root .ops-support > :first-child { max-height: 38vh; overflow-y: auto; }
+  .mer-root .ops-support > :last-child { min-height: 50vh; }
+}
+
+/* intake hero: tighten padding, stack the faux-input, full-width chips */
+@media (max-width: 560px) {
+  .mer-root .mer-hero { padding: 22px 16px 18px !important; }
+  .mer-root .mer-hero-input { flex-wrap: wrap !important; padding: 14px 14px 12px !important; }
+  .mer-root .mer-hero-ph { flex: 1 1 100% !important; white-space: normal !important; }
+  .mer-root .mer-hero-input > span:last-child { flex: 1 1 100% !important; }
+  .mer-root .mer-hero-input > span:last-child button { width: 100%; }
+}
+
+/* small phones: icon-only WhatsApp button (messages surface) */
+@media (max-width: 480px) {
+  .mer-root .mer-wa-label { display: none; }
+}
+
+/* live-state nav badge (pulses while an invoice needs attention) */
+.mer-root .mer-badge-pulse { animation: pulse-dot 2s ease-in-out infinite; }
+
+/* payment method grid + profile fields stack on phones */
+@media (max-width: 560px) {
+  .mer-root .mer-paygrid { grid-template-columns: 1fr !important; }
+  .mer-root .mer-prof-grid { grid-template-columns: 1fr !important; }
+}
+
+/* skeleton pulse — referenced on dashboard skeleton bars (workspace/dashboard.jsx) */
+.mer-root .mer-shimmer { animation: merShimmer 1.4s ease-in-out infinite; }
+@keyframes merShimmer { 0%, 100% { opacity: .9; } 50% { opacity: .55; } }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .45; transform: scale(.78); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes trackPop {
+  from { opacity: 0; transform: scale(.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes growX {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes labelFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop {
+  0%   { opacity: 0; transform: scale(.3); }
+  70%  { transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes confettiFall {
+  0%   { transform: translate3d(0,-12px,0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--cx,0), var(--cy,160px), 0) rotate(var(--cr,360deg)); opacity: 0; }
+}
+@keyframes haloPulse {
+  0%   { transform: scale(.9); opacity: .55; }
+  70%  { transform: scale(1.5); opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes drawerIn {
+  from { transform: translateX(26px); opacity: .5; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mer-root *, .mer-root *::before, .mer-root *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}

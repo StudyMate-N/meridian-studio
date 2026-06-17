@@ -1,0 +1,32 @@
+/* ============================================================
+   Expert workspace skin — TEAL accent over the shared system.
+   Scoped to `.mer-root.exp-root` so it overrides the base theme
+   ONLY on the expert surface and never touches the client app.
+   ============================================================ */
+.mer-root.exp-root {
+  --accent:       #0F7E84;   /* teal — expert action color */
+  --accent-deep:  #0A5F65;
+  --accent-soft:  #DBECEC;
+  --on-accent:    #FBFEFE;
+
+  /* a cooler roast so the sidebar reads expert, not client */
+  --roast:        #18211F;
+  --roast-2:      #232E2B;
+
+  /* cooler paper/lines so the whole surface reads expert (matches handoff §6) */
+  --paper:        #F2F1EC;
+  --surface-2:    #F1EFE7;
+  --line:         #E5E1D6;
+  --side-ink:     #EFF2F0;
+}
+.mer-root.exp-root ::selection { background: var(--accent-soft); color: var(--accent-deep); }
+
+/* redesign motion — skeleton shimmer + mobile drawer */
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+/* faint paper grain on the expert app background */
+.mer-root.exp-root.mer-app {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}

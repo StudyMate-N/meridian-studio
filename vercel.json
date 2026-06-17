@@ -3,6 +3,14 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.primemeridian.academy" }],
+      "destination": "https://primemeridian.academy/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/admin",      "destination": "/admin.html" },
     { "source": "/admin/(.*)", "destination": "/admin.html" },

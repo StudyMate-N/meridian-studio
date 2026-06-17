@@ -8,6 +8,7 @@
 body {
   margin: 0;
   padding: 0;
+  font-family: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
 }
 
 /* Inherit font from React components for all form elements */

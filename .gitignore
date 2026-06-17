@@ -5,3 +5,10 @@ dist
 .env.*.local
 .vercel
 supabase/.temp
+
+.claude/
+Meridian Studio (1).zip
+
+# raw AI-generated source images (scratch) — the site serves public/meridian/, not this
+Images/
+dev.cmd
