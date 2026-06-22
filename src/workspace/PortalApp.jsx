@@ -5,7 +5,7 @@
    ============================================================ */
 import React from "react";
 import { supabase } from "../lib/supabase.js";
-import { BriefFlow } from "../HomePage.jsx";
+import { BriefFlow, BriefIntake } from "../HomePage.jsx";
 import SupportChat from "../SupportChat.jsx";
 import Concierge from "../Concierge.jsx";
 import "../portal.css";        // keeps SupportChat's `.app`-scoped styles available
@@ -476,12 +476,23 @@ export default function PortalApp() {
   // rubric box (click events from plain buttons are ignored). An unpaid balance
   // shows a warning banner but never blocks a new brief (the public brief flow
   // always allows it too — keep the two surfaces consistent).
+  const intakeRef = useRef(null);
+  // Open the lean confirm modal with an already-scoped prefill (from the shared AI
+  // intake console, or the concierge).
+  const openBriefModal = (prefill) => { setBriefPrefill(prefill || null); setBriefOpen(true); };
+  // "Start a new brief" CTAs now send the client to the dashboard's AI intake
+  // console and focus it (the same intake as the homepage). A direct text / file /
+  // already-scoped object (e.g. from the concierge) still opens the confirm modal.
   const goNewBrief = (arg) => {
-    let prefill = null;
-    if (typeof File !== "undefined" && arg instanceof File) prefill = { file: arg };
-    else if (typeof arg === "string" && arg.trim()) prefill = { text: arg.trim() };
-    setBriefPrefill(prefill);
-    setBriefOpen(true);
+    const isFile = typeof File !== "undefined" && arg instanceof File;
+    const isText = typeof arg === "string" && arg.trim();
+    const isScoped = arg && typeof arg === "object" && !isFile && (arg.text || arg.title || arg.levelId || arg.scopeId);
+    if (isFile || isText || isScoped) {
+      openBriefModal(isFile ? { file: arg } : isText ? { text: arg.trim() } : arg);
+      return;
+    }
+    setRoute("dashboard"); setOrder(null); scrollTop();
+    setTimeout(() => { if (intakeRef.current) intakeRef.current(); }, 80);
   };
   const openSupport = () => setSupportOpen(true);
   // Consolidated invoice page — first-time payers pick a method first.
@@ -549,7 +560,9 @@ export default function PortalApp() {
           : ordersError ? <ErrorState onRetry={reload} />
           : orders.length === 0 ? (
               <>
-                <DashHero onStart={goNewBrief} />
+                <div className="ms" style={{ background: "transparent", marginBottom: 24 }}>
+                  <BriefIntake onBrief={openBriefModal} intakeRef={intakeRef} showFloat={false} />
+                </div>
                 <EmptyState
                   title="Welcome — let's get started."
                   body="Drop your rubric or describe your assignment above. Our AI drafts the brief, you review and approve, and we match you with an expert. No payment until your invoice is ready."
@@ -560,7 +573,9 @@ export default function PortalApp() {
               </>
             )
           : <>
-              <DashHero onStart={goNewBrief} compact />
+              <div className="ms" style={{ background: "transparent", marginBottom: 24 }}>
+                <BriefIntake onBrief={openBriefModal} intakeRef={intakeRef} showFloat={false} />
+              </div>
               {capBanner}
               <ClientDashboard stats={stats} orders={orders} packages={packages} open={openOrder} onDownload={downloadFile}
                 onPay={goInvoice} onNewBrief={goNewBrief} go={go} goTab={goTab} clientType={clientType} />

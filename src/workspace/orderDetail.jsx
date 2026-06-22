@@ -601,7 +601,12 @@ export function OrderDetail({ o, user, profile, initialIntent, back, notify, go 
     return () => clearTimeout(t);
   }, [initialIntent, o.id]);
 
-  // files (+ realtime so a delivery appears the moment it lands)
+  // files (+ realtime so a delivery — or an admin pulling a document — reflects the
+  // moment it lands). A *filtered* postgres_changes DELETE only fires when the
+  // deleted row's old image carries the filter column (needs REPLICA IDENTITY
+  // FULL), so it can silently miss deletes. We therefore also listen for ANY
+  // order_files DELETE and re-fetch, re-fetch on tab focus, and keep a short poll
+  // as a backstop — guaranteeing a removed document leaves the client's view fast.
   useEffect(() => {
     let active = true;
     const load = () => supabase.from("order_files").select("*").eq("order_id", o.id).order("created_at", { ascending: true })
@@ -609,8 +614,12 @@ export function OrderDetail({ o, user, profile, initialIntent, back, notify, go 
     load();
     const ch = supabase.channel(`order-${o.id}-files`)
       .on("postgres_changes", { event: "*", schema: "public", table: "order_files", filter: `order_id=eq.${o.id}` }, load)
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "order_files" }, load)
       .subscribe();
-    return () => { active = false; supabase.removeChannel(ch); };
+    const onVis = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onVis);
+    const poll = setInterval(load, 8000);
+    return () => { active = false; supabase.removeChannel(ch); document.removeEventListener("visibilitychange", onVis); clearInterval(poll); };
   }, [o.id]);
 
   // existing feedback for this order (released orders only — RLS allows the rest)

@@ -136,7 +136,10 @@ function AdminConsole({ user, onSignOut }) {
       .then(({ data }) => setSupportWaiting((data || []).length));
   }, []);
 
-  const counts = { orders: orders.filter((o) => o.status === "in_review").length, briefs: briefs.length, support: supportWaiting };
+  // Briefs badge = only those still awaiting conversion (a brief whose order
+  // already exists is "tracked", not pending), so the count isn't inflated by the
+  // brief+order pair every submission creates.
+  const counts = { orders: orders.filter((o) => o.status === "in_review").length, briefs: briefs.filter((b) => !AM.orderForBrief(b, orders)).length, support: supportWaiting };
 
   // notifications derived
   const derivedNotifs = useMemo(() => {

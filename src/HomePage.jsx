@@ -269,7 +269,11 @@ function Nav({ onBrief, onScope }) {
 }
 
 // ── HERO + AI INTAKE CONSOLE ────────────────────────────────────────────────────
-function Hero({ onBrief, intakeRef }) {
+// Shared AI brief-intake console — the homepage hero AND the client workspace both
+// render this so the intake is identical everywhere: AI scoping, an editable
+// "here's what we understood" result, and rubric/file upload. onBrief(prefill)
+// hands the scoped result to BriefFlow.
+export function BriefIntake({ onBrief, intakeRef, showFloat = true }) {
   // states: 'input' | 'busy' | 'result'
   const [stage, setStage] = useState('input')
   const [text, setText] = useState('')
@@ -278,6 +282,7 @@ function Hero({ onBrief, intakeRef }) {
   const [placeholder, setPlaceholder] = useState(INTAKE_EXAMPLES[0])
   const [toast, setToast] = useState('')
   const taRef = useRef(null)
+  const fileRef = useRef(null)
   const toastTimer = useRef(null)
   const liveCount = useMemo(() => 23 + (new Date().getHours() % 7), [])
 
@@ -315,6 +320,22 @@ function Hero({ onBrief, intakeRef }) {
     const el = taRef.current
     if (el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch {} setTimeout(() => el.focus(), 350) }
   } }, [intakeRef])
+
+  function onPickFile(e) {
+    const file = e.target.files && e.target.files[0]; e.target.value = ''
+    if (!file) return
+    const isText = /\.(txt|md|markdown|rtf|csv|log)$/i.test(file.name) || /^text\//.test(file.type || '')
+    if (isText) {
+      const reader = new FileReader()
+      reader.onload = () => { setText(String(reader.result || '').slice(0, 6000)); setErr(''); showToast("Rubric loaded — hit ‘Scope it’") }
+      reader.onerror = () => showToast("Couldn't read that file — paste the text instead")
+      reader.readAsText(file)
+    } else {
+      // PDF/DOCX can't be read in the browser — pull the filename in and ask for the key text.
+      setText(prev => prev || `Assignment rubric: ${file.name}\n\n(Paste the key instructions here so we can scope it.)`)
+      setErr(''); showToast(`Add the key details from ${file.name}, then ‘Scope it’`)
+    }
+  }
 
   function computeScope(j) {
     const level = LEVELS.find(l => l.id === j.level) || LEVELS[1]
@@ -413,48 +434,7 @@ BRIEF:
   }, [])
 
   return (
-    <section className="hero" id="top" aria-labelledby="hero-h">
-      <div className="hero-glow" aria-hidden="true" />
-      <div className="wrap hero-grid">
-        <div className="hero-left reveal">
-          <div className="hero-eyebrow">Academic support for a new era</div>
-          <h1 id="hero-h">
-            <span className="it">Your research.</span><br />
-            <span className="b">Your discipline.</span><br />
-            <span className="ac">An expert who knows it.</span>
-          </h1>
-          <p className="hero-lede">
-            We pair graduate, doctoral and advanced-professional students with vetted,
-            degree-holding specialists in your exact field — structured coaching, expert
-            editing and research design. Original work you understand and can defend.
-          </p>
-          <div className="hero-ctas">
-            <button type="button" className="btn btn-ink btn-lg"
-              aria-label="Scope my work" onClick={() => taRef.current?.focus()}>
-              Scope my work {Ico.arrow()}
-            </button>
-            <button type="button" className="btn btn-ghost btn-lg"
-              onClick={() => (window.MeridianOpenConcierge ? window.MeridianOpenConcierge() : window.open(`https://wa.me/${WA_NUM}`, '_blank'))}>
-              {Ico.spark()} Ask the concierge
-            </button>
-          </div>
-          <div className="hero-stats">
-            <div className="hs">
-              <div className="hs-top"><span className="hs-n">4.9</span><span className="hs-stars">{[0,1,2,3,4].map(i => <span key={i}>{Ico.star({ width: 12, height: 12 })}</span>)}</span></div>
-              <div className="hs-l">Average student rating</div>
-            </div>
-            <div className="hs">
-              <div className="hs-n ac">0%</div>
-              <div className="hs-l">AI generated · guaranteed</div>
-            </div>
-            <div className="hs">
-              <div className="hs-n">100%</div>
-              <div className="hs-l">On-time pledge</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="hero-visual reveal" style={{ transitionDelay: '.1s' }} id="intake">
+    <>
           <div className="intake">
             <div className="intake-head">
               <span className="ih-ic" aria-hidden="true">{Ico.sparkF({ width: 16, height: 16 })}</span>
@@ -484,7 +464,8 @@ BRIEF:
                   <button type="button" className="intake-scope" onClick={() => scopeIt()}>
                     {Ico.sparkF({ width: 16, height: 16 })} Scope it
                   </button>
-                  <button type="button" className="intake-upload" onClick={() => { setText(SAMPLE_RUBRIC); setErr(''); showToast("Sample rubric loaded — hit 'Scope it'") }}>
+                  <input ref={fileRef} type="file" accept=".txt,.md,.markdown,.rtf,.csv,.doc,.docx,.pdf" style={{ display: 'none' }} onChange={onPickFile} />
+                  <button type="button" className="intake-upload" onClick={() => fileRef.current && fileRef.current.click()}>
                     {Ico.upload({ width: 17, height: 17 })} Upload rubric
                   </button>
                 </div>
@@ -562,10 +543,61 @@ BRIEF:
               </div>
             )}
           </div>
-          <div className="intake-float" aria-hidden="true">
-            <span className="dot" /><span>{liveCount} students scoping now</span>
-          </div>
+          {showFloat && (
+            <div className="intake-float" aria-hidden="true">
+              <span className="dot" /><span>{liveCount} students scoping now</span>
+            </div>
+          )}
           {toast && <div className="intake-toast" role="status">{toast}</div>}
+    </>
+  )
+}
+
+function Hero({ onBrief, intakeRef }) {
+  return (
+    <section className="hero" id="top" aria-labelledby="hero-h">
+      <div className="hero-glow" aria-hidden="true" />
+      <div className="wrap hero-grid">
+        <div className="hero-left reveal">
+          <div className="hero-eyebrow">Academic support for a new era</div>
+          <h1 id="hero-h">
+            <span className="it">Your research.</span><br />
+            <span className="b">Your discipline.</span><br />
+            <span className="ac">An expert who knows it.</span>
+          </h1>
+          <p className="hero-lede">
+            We pair graduate, doctoral and advanced-professional students with vetted,
+            degree-holding specialists in your exact field — structured coaching, expert
+            editing and research design. Original work you understand and can defend.
+          </p>
+          <div className="hero-ctas">
+            <button type="button" className="btn btn-ink btn-lg"
+              aria-label="Scope my work" onClick={() => intakeRef.current && intakeRef.current()}>
+              Scope my work {Ico.arrow()}
+            </button>
+            <button type="button" className="btn btn-ghost btn-lg"
+              onClick={() => (window.MeridianOpenConcierge ? window.MeridianOpenConcierge() : window.open(`https://wa.me/${WA_NUM}`, '_blank'))}>
+              {Ico.spark()} Ask the concierge
+            </button>
+          </div>
+          <div className="hero-stats">
+            <div className="hs">
+              <div className="hs-top"><span className="hs-n">4.9</span><span className="hs-stars">{[0,1,2,3,4].map(i => <span key={i}>{Ico.star({ width: 12, height: 12 })}</span>)}</span></div>
+              <div className="hs-l">Average student rating</div>
+            </div>
+            <div className="hs">
+              <div className="hs-n ac">0%</div>
+              <div className="hs-l">AI generated · guaranteed</div>
+            </div>
+            <div className="hs">
+              <div className="hs-n">100%</div>
+              <div className="hs-l">On-time pledge</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="hero-visual reveal" style={{ transitionDelay: '.1s' }} id="intake">
+          <BriefIntake onBrief={onBrief} intakeRef={intakeRef} />
         </div>
       </div>
 
@@ -1109,6 +1141,8 @@ export function BriefFlow({ open, onClose, prefill }) {
   const [variant, setVariant] = useState(null)    // 'temp' | 'existed' | 'account' — success shape
   const [temp, setTemp] = useState(null)          // { email, password } for new-guest temp sign-in
   const [copied, setCopied] = useState('')        // 'email' | 'pass' — momentary copy feedback
+  const [orderRef, setOrderRef] = useState(null)  // created order ref → shown in the success state
+  const autoSubmitted = useRef(false)             // signed-in clients auto-place — no confirm step
 
   const [f, setF] = useState({
     title: '', discipline: 'Nursing & Health Sciences', level: 'ms', scope: 'one',
@@ -1118,6 +1152,7 @@ export function BriefFlow({ open, onClose, prefill }) {
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
 
   useEffect(() => {
+    autoSubmitted.current = false
     if (!open) return
     if (prefill) {
       setF(p => ({
@@ -1135,7 +1170,7 @@ export function BriefFlow({ open, onClose, prefill }) {
       }))
     }
     setSent(false); setErr(''); setSubmitting(false)
-    setVariant(null); setTemp(null); setCopied('')
+    setVariant(null); setTemp(null); setCopied(''); setOrderRef(null)
     // Detect whether the visitor is already a registered, signed-in client.
     ;(async () => {
       try {
@@ -1161,6 +1196,15 @@ export function BriefFlow({ open, onClose, prefill }) {
     if (open) window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
+
+  // Signed-in clients skip the confirm step entirely — placing the brief auto-
+  // creates the order and they land straight on the "what's next" success.
+  useEffect(() => {
+    if (open && account && !sent && !submitting && !autoSubmitted.current) {
+      autoSubmitted.current = true
+      submitBrief()
+    }
+  }, [open, account, sent, submitting])
 
   const level = useMemo(() => LEVELS.find(l => l.id === f.level) || LEVELS[0], [f.level])
   const scope = useMemo(() => SCOPES.find(s => s.id === f.scope) || SCOPES[0], [f.scope])
@@ -1218,7 +1262,7 @@ export function BriefFlow({ open, onClose, prefill }) {
     try {
       const { data: refData } = await supabase.rpc('generate_order_ref')
       const ref = refData || ('MS-' + Date.now().toString().slice(-5))
-      createdRef = ref
+      createdRef = ref; setOrderRef(ref)
       const { data: { session } } = await supabase.auth.getSession()
       const orderRow = {
         ref,
@@ -1305,10 +1349,10 @@ export function BriefFlow({ open, onClose, prefill }) {
   if (!open) return null
 
   const firstName = (account?.name || f.name).trim().split(/\s+/)[0]
-  const briefTitle = sent ? 'All set' : 'Start your brief'
+  const briefTitle = sent ? (variant === 'account' ? 'Brief sent' : 'All set') : 'Start your brief'
   const briefSub = sent
-    ? 'Your expert takes it from here.'
-    : 'Confirm where to reach you — an expert takes it from here.'
+    ? (variant === 'account' ? 'It’s in your workspace — here’s what happens next.' : 'Your expert takes it from here.')
+    : (account ? 'Placing your brief…' : 'Confirm where to reach you — an expert takes it from here.')
 
   return (
     <div className="bf-overlay" role="dialog" aria-modal="true" aria-label="Start your brief"
@@ -1326,10 +1370,10 @@ export function BriefFlow({ open, onClose, prefill }) {
         {sent ? (
           <div className="bf-lbody bf-lsuccess">
             <span className="bf-lcheck" aria-hidden="true">{Ico.check({ width: 28, height: 28 })}</span>
-            <div className="bf-lwin">You're in{firstName ? `, ${firstName}` : ''}.</div>
+            <div className="bf-lwin">{variant === 'account' ? `Sent${firstName ? `, ${firstName}` : ''}.` : `You're in${firstName ? `, ${firstName}` : ''}.`}</div>
 
             {variant === 'account' ? (
-              <p className="bf-ltext">This order's been added to your workspace — sign in any time to track it, message your expert, and pay your deposit.</p>
+              <p className="bf-ltext">{orderRef ? <>Order <b>{orderRef}</b> is in your workspace. </> : null}We'll confirm the scope, assign your expert and send your deposit invoice — track it under <b>Under review</b>.</p>
             ) : variant === 'existed' ? (
               <p className="bf-ltext">You already have an account with <b>{f.email}</b> — sign in at <b>primemeridian.academy/workspace</b> with your usual password to track this order.</p>
             ) : (
@@ -1358,12 +1402,24 @@ export function BriefFlow({ open, onClose, prefill }) {
             )}
 
             <a className="btn btn-accent btn-lg bf-lprimary" href="/workspace" onClick={openWorkspace}>
-              <span>Open my workspace</span>{Ico.arrow()}
+              <span>{variant === 'account' ? 'View my orders' : 'Open my workspace'}</span>{Ico.arrow()}
             </a>
-            <button type="button" className="bf-lghost" onClick={onClose}>Maybe later</button>
+            <button type="button" className="bf-lghost" onClick={onClose}>{variant === 'account' ? 'Start another' : 'Maybe later'}</button>
+          </div>
+        ) : account ? (
+          /* ── PLACING — signed-in clients auto-place, no confirm step ── */
+          <div className="bf-lbody bf-lsuccess">
+            <span aria-hidden="true" style={{ width: 26, height: 26, borderRadius: 999, border: '3px solid var(--accent-tint)', borderTopColor: 'var(--accent)', animation: 'ms-spin .7s linear infinite', margin: '4px auto 16px', display: 'block' }} />
+            <div className="bf-lwin" style={{ fontSize: 19 }}>Placing your brief…</div>
+            {f.title && <p className="bf-ltext"><b>{f.title}</b></p>}
+            {err && <div className="bf-err" role="alert">{err}</div>}
+            {err && (
+              <button type="button" className="btn btn-accent btn-lg bf-lprimary"
+                onClick={() => { autoSubmitted.current = true; setErr(''); submitBrief() }}>Try again</button>
+            )}
           </div>
         ) : (
-          /* ── FORM STATE ── */
+          /* ── FORM STATE (guest) ── */
           <form className="bf-lbody bf-lform" onSubmit={submitBrief}>
             {hasScope && (
               <div className="bf-scopebar">

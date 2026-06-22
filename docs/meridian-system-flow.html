@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Meridian Studio — End-to-End System Flow</title>
+<style>
+  :root{
+    --paper:#F4F1EA; --surface:#FBFAF7; --line:#E4DCCF; --ink:#211A14; --ink2:#4A4036;
+    --muted:#8A7E6F; --clay:#BD5A33; --indigo:#5750D4; --teal:#2E8B82; --slate:#6E6357; --good:#4F9D69;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:'Hanken Grotesk',ui-sans-serif,system-ui,Segoe UI,Arial,sans-serif;}
+  .wrap{max-width:1280px;margin:0 auto;padding:26px 20px 60px;}
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+  .bar h1{font-family:Georgia,'Times New Roman',serif;font-weight:500;font-size:22px;margin:0;}
+  .bar .sub{font-size:13px;color:var(--muted);margin-top:2px;}
+  .btns{display:flex;gap:10px;}
+  button{font:600 13px inherit;cursor:pointer;border-radius:999px;padding:9px 18px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);}
+  button.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px;overflow:auto;}
+  svg{display:block;width:100%;height:auto;}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.6;}
+  @media print{ .btns{display:none} body{background:#fff} .card{border:none} .wrap{padding:0} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div>
+      <h1>Meridian Studio — End-to-End System Flow</h1>
+      <div class="sub">Academic-support platform · primemeridian.academy · public site · client, expert &amp; admin consoles · Supabase backend</div>
+    </div>
+    <div class="btns">
+      <button class="primary" onclick="window.print()">Save as PDF / Print</button>
+      <button onclick="dl()">Download .svg</button>
+    </div>
+  </div>
+
+  <div class="card">
+<svg id="flow" viewBox="0 0 1240 1840" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ttl desc">
+  <title id="ttl">Meridian Studio end-to-end system flow</title>
+  <desc id="desc">Top-to-bottom flow from public discovery and brief intake, through order genesis, admin operations, expert delivery, QC and release, the client workspace, and money — with side panels for the order status machine, three-lens row-level security, edge functions, email events and platform stack.</desc>
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="5.5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#BD5A33"/>
+    </marker>
+    <style>
+      .lane{font:700 10.5px ui-sans-serif,system-ui;letter-spacing:1.6px}
+      .ttl{font:600 18px Georgia,serif;fill:#211A14}
+      .step{font:400 13px ui-sans-serif,system-ui;fill:#4A4036}
+      .tag{font:600 11.5px ui-monospace,monospace;fill:#938878}
+      .num{font:700 13px ui-sans-serif,system-ui;fill:#fff}
+      .pttl{font:700 11px ui-sans-serif,system-ui;letter-spacing:1.4px;fill:#211A14}
+      .ptxt{font:400 12px ui-sans-serif,system-ui;fill:#4A4036}
+      .pill{font:600 11.5px ui-monospace,monospace;fill:#211A14}
+    </style>
+  </defs>
+
+  <!-- ===================== MAIN SPINE (cards 60..800) ===================== -->
+
+  <!-- arrows on spine x=430 -->
+  <g stroke="#BD5A33" stroke-width="2" marker-end="url(#ah)">
+    <line x1="430" y1="435" x2="430" y2="468"/>
+    <line x1="430" y1="651" x2="430" y2="684"/>
+    <line x1="430" y1="897" x2="430" y2="930"/>
+    <line x1="430" y1="1143" x2="430" y2="1176"/>
+    <line x1="430" y1="1339" x2="430" y2="1372"/>
+    <line x1="430" y1="1585" x2="430" y2="1618"/>
+  </g>
+
+  <!-- CARD 1 — Discovery & Intake (PUBLIC / clay) -->
+  <g>
+    <rect x="60" y="200" width="740" height="235" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <rect x="60" y="200" width="6" height="235" rx="3" fill="#BD5A33"/>
+    <circle cx="92" cy="234" r="15" fill="#BD5A33"/><text x="92" y="239" text-anchor="middle" class="num">1</text>
+    <text x="120" y="226" class="lane" fill="#BD5A33">PUBLIC SITE</text>
+    <text x="120" y="250" class="ttl">Discovery &amp; intake</text>
+    <text x="788" y="230" text-anchor="end" class="tag">/</text>
+    <text x="120" y="282" class="step">› Visitor lands on the homepage · transparent estimator (level × scope × timeline)</text>
+    <text x="120" y="306" class="step">› “Ask Meridian” AI concierge — instant estimate, live order lookup, expert intros, film</text>
+    <text x="120" y="330" class="step">› Concierge “talk to a person” escalates into Admin → Support</text>
+    <text x="120" y="354" class="step">› Start a brief → auto-scope (level, subject, citation style, length)</text>
+    <text x="120" y="378" class="step">› Submit → ensure-client-auth creates the account + temp password + welcome email</text>
+    <text x="120" y="408" class="tag">edge: concierge · ensure-client-auth</text>
+  </g>
+
+  <!-- CARD 2 — Order genesis (SYSTEM / slate) -->
+  <g>
+    <rect x="60" y="471" width="740" height="180" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <rect x="60" y="471" width="6" height="180" rx="3" fill="#6E6357"/>
+    <circle cx="92" cy="505" r="15" fill="#6E6357"/><text x="92" y="510" text-anchor="middle" class="num">2</text>
+    <text x="120" y="497" class="lane" fill="#6E6357">SYSTEM · DATABASE</text>
+    <text x="120" y="521" class="ttl">Order genesis</text>
+    <text x="788" y="501" text-anchor="end" class="tag">postgres triggers</text>
+    <text x="120" y="553" class="step">› Brief saved → order auto-created (status: new / brief_received)</text>
+    <text x="120" y="577" class="step">› Trigger create_invoice_for_order → invoice raised (unpaid)</text>
+    <text x="120" y="601" class="step">› Trigger handle_new_user → profile row created on first sign-up</text>
+    <text x="120" y="625" class="step">› Quote locked at order time: quote_total + 50% deposit</text>
+  </g>
+
+  <!-- CARD 3 — Admin ops (ADMIN / indigo) -->
+  <g>
+    <rect x="60" y="687" width="740" height="210" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <rect x="60" y="687" width="6" height="210" rx="3" fill="#5750D4"/>
+    <circle cx="92" cy="721" r="15" fill="#5750D4"/><text x="92" y="726" text-anchor="middle" class="num">3</text>
+    <text x="120" y="713" class="lane" fill="#5750D4">ADMIN · OPS CONSOLE</text>
+    <text x="120" y="737" class="ttl">Operations &amp; assignment</text>
+    <text x="788" y="717" text-anchor="end" class="tag">/admin</text>
+    <text x="120" y="769" class="step">› Dashboard — pipeline, awaiting QC, unpaid, revenue</text>
+    <text x="120" y="793" class="step">› Briefs → convert to order  ·  Orders → invite / assign an expert</text>
+    <text x="120" y="817" class="step">› Clients → onboard-client  ·  Experts → onboard-expert</text>
+    <text x="120" y="841" class="step">› onboard-expert: writers row → createUser → auto-link trigger → writer role → email</text>
+    <text x="120" y="865" class="step">› Billing (invoices, payments) · Support (escalations) · Emails</text>
+  </g>
+
+  <!-- CARD 4 — Expert (EXPERT / teal) -->
+  <g>
+    <rect x="60" y="933" width="740" height="210" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <rect x="60" y="933" width="6" height="210" rx="3" fill="#2E8B82"/>
+    <circle cx="92" cy="967" r="15" fill="#2E8B82"/><text x="92" y="972" text-anchor="middle" class="num">4</text>
+    <text x="120" y="959" class="lane" fill="#2E8B82">EXPERT · WORKSPACE</text>
+    <text x="120" y="983" class="ttl">Claim &amp; deliver</text>
+    <text x="788" y="963" text-anchor="end" class="tag">/expert</text>
+    <text x="120" y="1015" class="step">› Sign in with temp login → claim_writer_profile self-links the account</text>
+    <text x="120" y="1039" class="step">› Sees offers / invitations → accepts the assignment</text>
+    <text x="120" y="1063" class="step">› Status: assigned → writing → submits work (per-part for bundles)</text>
+    <text x="120" y="1087" class="step">› Part status rolls up the order status → QC review</text>
+    <text x="120" y="1111" class="step">› Payout via M-Pesa — admin-verified gate before release of funds</text>
+  </g>
+
+  <!-- CARD 5 — QC & Release (ADMIN / indigo) -->
+  <g>
+    <rect x="60" y="1179" width="740" height="160" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <rect x="60" y="1179" width="6" height="160" rx="3" fill="#5750D4"/>
+    <circle cx="92" cy="1213" r="15" fill="#5750D4"/><text x="92" y="1218" text-anchor="middle" class="num">5</text>
+    <text x="120" y="1205" class="lane" fill="#5750D4">ADMIN · QUALITY GATE</text>
+    <text x="120" y="1229" class="ttl">QC &amp; release</text>
+    <text x="788" y="1209" text-anchor="end" class="tag">release gate</text>
+    <text x="120" y="1261" class="step">› Admin reviews the submission (QC review)</text>
+    <text x="120" y="1285" class="step">› “Approve &amp; release” flips the visibility gate (MM.filesVisible)</text>
+    <text x="120" y="1309" class="step">› Status → delivered; the deliverable becomes visible to the client</text>
+  </g>
+
+  <!-- CARD 6 — Client (CLIENT / clay) -->
+  <g>
+    <rect x="60" y="1375" width="740" height="210" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <rect x="60" y="1375" width="6" height="210" rx="3" fill="#BD5A33"/>
+    <circle cx="92" cy="1409" r="15" fill="#BD5A33"/><text x="92" y="1414" text-anchor="middle" class="num">6</text>
+    <text x="120" y="1401" class="lane" fill="#BD5A33">CLIENT · WORKSPACE</text>
+    <text x="120" y="1425" class="ttl">Pay &amp; receive</text>
+    <text x="788" y="1405" text-anchor="end" class="tag">/workspace</text>
+    <text x="120" y="1457" class="step">› Sign in → dashboard of orders &amp; invoices</text>
+    <text x="120" y="1481" class="step">› Order detail → pay the invoice (M-Pesa / payment link)</text>
+    <text x="120" y="1505" class="step">› Invoice paid → sync_order_on_invoice_paid → payment_status: paid</text>
+    <text x="120" y="1529" class="step">› Deliverable available after release → download</text>
+    <text x="120" y="1553" class="step">› Leaves feedback / rating (order_feedback)</text>
+  </g>
+
+  <!-- CARD 7 — Money (FINANCE / good) -->
+  <g>
+    <rect x="60" y="1621" width="740" height="140" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <rect x="60" y="1621" width="6" height="140" rx="3" fill="#4F9D69"/>
+    <circle cx="92" cy="1655" r="15" fill="#4F9D69"/><text x="92" y="1660" text-anchor="middle" class="num">7</text>
+    <text x="120" y="1647" class="lane" fill="#4F9D69">FINANCE</text>
+    <text x="120" y="1671" class="ttl">Money in &amp; out</text>
+    <text x="788" y="1651" text-anchor="end" class="tag">off-platform M-Pesa</text>
+    <text x="120" y="1703" class="step">› Client payment → recorded as revenue against the order</text>
+    <text x="120" y="1727" class="step">› Expert payout (writer_payouts) → notify_payout email → paid via M-Pesa</text>
+  </g>
+
+  <!-- ===================== RIGHT PANELS (840..1180) ===================== -->
+
+  <!-- Status machine -->
+  <g>
+    <rect x="840" y="200" width="340" height="232" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <text x="862" y="228" class="pttl">ORDER STATUS MACHINE</text>
+    <g>
+      <g transform="translate(862,244)">
+        <rect width="150" height="26" rx="13" fill="#F4F1EA" stroke="#E4DCCF"/><text x="14" y="17" class="pill">new</text>
+      </g>
+      <g transform="translate(862,278)">
+        <rect width="150" height="26" rx="13" fill="#F4F1EA" stroke="#E4DCCF"/><text x="14" y="17" class="pill">assigned</text>
+      </g>
+      <g transform="translate(862,312)">
+        <rect width="150" height="26" rx="13" fill="#F4F1EA" stroke="#E4DCCF"/><text x="14" y="17" class="pill">writing</text>
+      </g>
+      <g transform="translate(862,346)">
+        <rect width="150" height="26" rx="13" fill="#F4F1EA" stroke="#E4DCCF"/><text x="14" y="17" class="pill">qc_review</text>
+      </g>
+      <g transform="translate(862,380)">
+        <rect width="150" height="26" rx="13" fill="#EAF3EE" stroke="#CDE6D6"/><text x="14" y="17" class="pill">delivered</text>
+      </g>
+      <g stroke="#BD5A33" stroke-width="1.6" marker-end="url(#ah)">
+        <line x1="937" y1="270" x2="937" y2="277"/><line x1="937" y1="304" x2="937" y2="311"/>
+        <line x1="937" y1="338" x2="937" y2="345"/><line x1="937" y1="372" x2="937" y2="379"/>
+      </g>
+      <text x="1024" y="262" class="ptxt">payment runs</text>
+      <text x="1024" y="280" class="ptxt">in parallel:</text>
+      <text x="1024" y="304" class="pill" fill="#BD5A33">unpaid</text>
+      <text x="1024" y="326" class="pill">→ deposit</text>
+      <text x="1024" y="348" class="pill">→ paid</text>
+      <text x="1024" y="392" class="ptxt">entry: brief_</text>
+      <text x="1024" y="410" class="ptxt">received / invited</text>
+    </g>
+  </g>
+
+  <!-- Three-lens RLS -->
+  <g>
+    <rect x="840" y="452" width="340" height="250" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <text x="862" y="480" class="pttl">THREE-LENS SECURITY (RLS)</text>
+    <text x="862" y="506" class="ptxt" fill="#BD5A33" font-weight="700">Client lens</text>
+    <text x="862" y="526" class="ptxt">own orders &amp; invoices only;</text>
+    <text x="862" y="544" class="ptxt">no payout, no files pre-release</text>
+    <text x="862" y="574" class="ptxt" fill="#2E8B82" font-weight="700">Expert lens</text>
+    <text x="862" y="594" class="ptxt">assigned work only;</text>
+    <text x="862" y="612" class="ptxt">no student name, no quote_total</text>
+    <text x="862" y="642" class="ptxt" fill="#5750D4" font-weight="700">Admin lens</text>
+    <text x="862" y="662" class="ptxt">full visibility &amp; every action</text>
+    <text x="862" y="686" class="ptxt" fill="#8A7E6F">enforced server-side in Postgres</text>
+  </g>
+
+  <!-- Edge functions -->
+  <g>
+    <rect x="840" y="722" width="340" height="250" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <text x="862" y="750" class="pttl">EDGE FUNCTIONS (Deno)</text>
+    <text x="862" y="776" class="tag" fill="#4A4036">concierge</text>
+    <text x="862" y="798" class="tag" fill="#4A4036">ensure-client-auth</text>
+    <text x="862" y="820" class="tag" fill="#4A4036">onboard-client · onboard-expert</text>
+    <text x="862" y="842" class="tag" fill="#4A4036">delete-user · payments</text>
+    <text x="862" y="864" class="tag" fill="#4A4036">send-email · send-recovery</text>
+    <text x="862" y="886" class="tag" fill="#4A4036">attach-brief-file</text>
+    <text x="862" y="908" class="tag" fill="#4A4036">delete-order-file · admin-reset</text>
+    <text x="862" y="940" class="ptxt" fill="#8A7E6F">secrets server-side; email via Resend</text>
+  </g>
+
+  <!-- Email events -->
+  <g>
+    <rect x="840" y="992" width="340" height="190" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <text x="862" y="1020" class="pttl">EMAIL EVENTS (Resend)</text>
+    <text x="862" y="1046" class="ptxt">brief received · quote ready</text>
+    <text x="862" y="1066" class="ptxt">order assigned · delivered</text>
+    <text x="862" y="1086" class="ptxt">application received · payout</text>
+    <text x="862" y="1106" class="ptxt">welcome (client &amp; expert)</text>
+    <text x="862" y="1138" class="ptxt" fill="#8A7E6F">fired by db triggers + edge fns;</text>
+    <text x="862" y="1156" class="ptxt" fill="#8A7E6F">never block the core action</text>
+  </g>
+
+  <!-- Platform -->
+  <g>
+    <rect x="840" y="1202" width="340" height="232" rx="14" fill="#FBFAF7" stroke="#E4DCCF"/>
+    <text x="862" y="1230" class="pttl">PLATFORM &amp; SYNC</text>
+    <text x="862" y="1256" class="ptxt">Vite + React — 4 entry surfaces</text>
+    <text x="862" y="1276" class="ptxt">Vercel (static + edge)</text>
+    <text x="862" y="1300" class="ptxt">Supabase: Postgres · Auth ·</text>
+    <text x="862" y="1318" class="ptxt">Storage · Realtime</text>
+    <text x="862" y="1342" class="ptxt">Realtime subscriptions +</text>
+    <text x="862" y="1360" class="ptxt">polling fallback</text>
+    <text x="862" y="1384" class="ptxt">Pricing: per-page rate ×</text>
+    <text x="862" y="1402" class="ptxt">level × scope × timeline</text>
+  </g>
+
+  <!-- legend -->
+  <g>
+    <text x="60" y="150" class="lane" fill="#8A7E6F">SWIMLANES</text>
+    <g transform="translate(160,140)">
+      <circle cx="6" cy="6" r="6" fill="#BD5A33"/><text x="18" y="10" class="ptxt">Public / Client</text>
+      <circle cx="146" cy="6" r="6" fill="#5750D4"/><text x="158" y="10" class="ptxt">Admin</text>
+      <circle cx="236" cy="6" r="6" fill="#2E8B82"/><text x="248" y="10" class="ptxt">Expert</text>
+      <circle cx="336" cy="6" r="6" fill="#6E6357"/><text x="348" y="10" class="ptxt">System</text>
+      <circle cx="436" cy="6" r="6" fill="#4F9D69"/><text x="448" y="10" class="ptxt">Finance</text>
+    </g>
+  </g>
+
+  <!-- footer -->
+  <text x="60" y="1800" class="ptxt" fill="#8A7E6F">Meridian Studio · end-to-end flow · arrows show the happy path; each lane also reads/writes the shared Supabase order &amp; invoice records.</text>
+</svg>
+  </div>
+
+  <div class="hint">
+    <strong>How to read it:</strong> the numbered spine (1→7) is the end-to-end journey of one order — from a visitor’s first estimate to money in and out. The right column is the cross-cutting machinery every lane shares: the order status machine, the three-lens row-level security, the edge functions, the email events, and the platform stack.<br>
+    <strong>To get a PDF:</strong> click <em>Save as PDF / Print</em> (choose “Save as PDF” as the destination). The <em>Download .svg</em> button saves the vector graphic for slides or further editing.
+  </div>
+</div>
+
+<script>
+  function dl(){
+    var svg = document.getElementById('flow').outerHTML;
+    var blob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n'+svg], {type:'image/svg+xml'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'meridian-system-flow.svg';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+</script>
+</body>
+</html>

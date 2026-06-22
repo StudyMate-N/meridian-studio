@@ -191,6 +191,32 @@ export function OrderDrawer({ o, writers, user, profile, invoice, clientType = "
     }
     setBusy(false); notify("File uploaded.");
   };
+  // Admin can pull a file the client should never have seen. delete-order-file
+  // (service role) removes the storage object + the row, so it leaves the client's
+  // workspace immediately via the realtime subscription above.
+  const removeFile = async (f) => {
+    if (!window.confirm(`Delete “${f.name}”?\nThis removes it from the client's workspace and can't be undone.`)) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-order-file", { body: { file_id: f.id } });
+      if (error || !data?.ok) notify("Could not delete that file.");
+      else { setFiles((p) => p.filter((x) => x.id !== f.id)); notify("File removed."); }
+    } catch (e) { console.error(e); notify("Could not delete that file."); }
+    setBusy(false);
+  };
+  const removeAllFiles = async () => {
+    if (!files.length) return;
+    if (!window.confirm(`Remove ALL ${files.length} document(s) from this order?\nThis clears them from the client's workspace and can't be undone.`)) return;
+    setBusy(true);
+    let failed = 0;
+    for (const f of [...files]) {
+      try { const { data, error } = await supabase.functions.invoke("delete-order-file", { body: { file_id: f.id } }); if (error || !data?.ok) failed++; }
+      catch { failed++; }
+    }
+    setFiles([]);
+    setBusy(false);
+    notify(failed ? `Removed — ${failed} could not be deleted.` : "All documents removed.");
+  };
   const download = async (f) => {
     if (!f.path) return;
     const { data } = await supabase.storage.from("order-files").createSignedUrl(f.path, 3600);
@@ -457,6 +483,11 @@ export function OrderDrawer({ o, writers, user, profile, invoice, clientType = "
               <button onClick={() => addRef.current && addRef.current.click()} disabled={busy} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "12px", borderRadius: 12, border: "1.5px dashed var(--line-2)", background: "var(--surface-2)", color: "var(--ink)", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 4 }}>
                 <Icon name="upload" size={17} /> Upload a file
               </button>
+              {files.length > 0 && (
+                <button onClick={removeAllFiles} disabled={busy} title="Remove every document from this order" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "9px 12px", borderRadius: 10, border: "1px solid var(--st-revision-edge)", background: "var(--st-revision-bg)", color: "#B23B3B", fontSize: 13, fontWeight: 600, cursor: busy ? "default" : "pointer", marginBottom: 4 }}>
+                  <Icon name="trash" size={15} /> Remove all documents ({files.length})
+                </button>
+              )}
               {files.length === 0 && <div style={{ padding: "20px 4px", color: "var(--muted)", fontSize: 13.5, textAlign: "center" }}>No files yet.</div>}
               {files.map((f) => {
                 const k = AM.fileKind(f.kind);
@@ -469,6 +500,7 @@ export function OrderDrawer({ o, writers, user, profile, invoice, clientType = "
                     </div>
                     <button onClick={() => setPreview(f)} title="Preview" aria-label="Preview" style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "transparent", color: "var(--ink-2)", display: "grid", placeItems: "center", cursor: "pointer" }}><Icon name="eye" size={16} /></button>
                     <button onClick={() => download(f)} title="Download" aria-label="Download" style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "transparent", color: "var(--ink-2)", display: "grid", placeItems: "center", cursor: "pointer" }}><Icon name="download" size={16} /></button>
+                    <button onClick={() => removeFile(f)} disabled={busy} title="Delete file" aria-label="Delete file" style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "transparent", color: "#B23B3B", display: "grid", placeItems: "center", cursor: busy ? "default" : "pointer" }}><Icon name="trash" size={16} /></button>
                   </div>
                 );
               })}
